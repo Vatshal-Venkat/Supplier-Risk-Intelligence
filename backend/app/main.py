@@ -1,5 +1,5 @@
 from fastapi import FastAPI
-from app.routes import health
+from app.routes import health, supplier
 from app.database import engine
 from app import models
 
@@ -7,7 +7,9 @@ models.Base.metadata.create_all(bind=engine)
 
 app = FastAPI(title="Supplier Risk PoC")
 
+
 app.include_router(health.router)
+app.include_router(supplier.router)
 
 @app.get("/")
 def root():
