@@ -9,7 +9,7 @@ type Supplier = {
   name: string;
   country: string;
   industry: string;
-  risk?: "PASS" | "CONDITIONAL" | "FAIL";
+  risk?: "PASS" | "CONDITIONAL" | "FAIL" | null;
 };
 
 export default function SuppliersPage() {
@@ -21,18 +21,11 @@ export default function SuppliersPage() {
 
   const router = useRouter();
 
+  // ✅ SINGLE OPTIMIZED API CALL
   useEffect(() => {
-    axios.get("http://127.0.0.1:8000/suppliers/")
-      .then(res =>
-        setSuppliers(
-          res.data.map((s: Supplier) => ({
-            ...s,
-            risk: ["PASS", "CONDITIONAL", "FAIL"][
-              Math.floor(Math.random() * 3)
-            ] as any
-          }))
-        )
-      );
+    axios
+      .get("http://127.0.0.1:8000/suppliers/with-status")
+      .then(res => setSuppliers(res.data));
   }, []);
 
   const toggleSelect = (id: number) => {
@@ -58,8 +51,8 @@ export default function SuppliersPage() {
         s.name.toLowerCase().includes(search.toLowerCase())
       )
       .sort((a, b) => {
-        const valA = a[sortKey].toLowerCase();
-        const valB = b[sortKey].toLowerCase();
+        const valA = a[sortKey]?.toLowerCase() || "";
+        const valB = b[sortKey]?.toLowerCase() || "";
         if (valA < valB) return sortAsc ? -1 : 1;
         if (valA > valB) return sortAsc ? 1 : -1;
         return 0;
@@ -74,7 +67,6 @@ export default function SuppliersPage() {
     <main className="min-h-screen px-16 py-24 bg-[#070b12] text-white">
       <div className="max-w-6xl mx-auto space-y-12">
 
-        {/* Header */}
         <div className="space-y-3">
           <h1 className="text-4xl font-semibold tracking-tight">
             Suppliers
@@ -84,7 +76,6 @@ export default function SuppliersPage() {
           </p>
         </div>
 
-        {/* Search Bar */}
         <div className="border border-zinc-800 bg-[#0c121c] rounded-lg px-6 py-4">
           <input
             placeholder="Search suppliers..."
@@ -94,30 +85,23 @@ export default function SuppliersPage() {
           />
         </div>
 
-        {/* Table */}
         <div className="border border-zinc-800 rounded-lg overflow-hidden bg-[#0b111b]">
 
-          {/* Header Row */}
           <div className="grid grid-cols-12 px-8 py-4 text-xs uppercase tracking-widest text-gray-600 border-b border-zinc-800 bg-[#0a0f18]">
-
             <div className="col-span-4 cursor-pointer" onClick={() => handleSort("name")}>
               Name
             </div>
-
             <div className="col-span-3 cursor-pointer" onClick={() => handleSort("country")}>
               Country
             </div>
-
             <div className="col-span-3 cursor-pointer" onClick={() => handleSort("industry")}>
               Industry
             </div>
-
             <div className="col-span-2 text-right">
               Action
             </div>
           </div>
 
-          {/* Data Rows */}
           {filtered.map((supplier) => {
             const isSelected = selected.includes(supplier.id);
 
@@ -128,10 +112,7 @@ export default function SuppliersPage() {
                   isSelected ? "bg-[#111a2a]" : "hover:bg-[#101726]"
                 }`}
               >
-
-                {/* Name */}
                 <div className="col-span-4 flex items-center gap-4">
-
                   <div
                     onClick={() => toggleSelect(supplier.id)}
                     className={`w-4 h-4 border rounded-sm cursor-pointer transition ${
@@ -146,19 +127,20 @@ export default function SuppliersPage() {
                       {supplier.name}
                     </span>
 
-                    <span
-                      className={`text-[10px] tracking-widest px-2 py-0.5 border rounded ${
-                        supplier.risk === "PASS"
-                          ? "border-green-500 text-green-400"
-                          : supplier.risk === "CONDITIONAL"
-                          ? "border-yellow-500 text-yellow-400"
-                          : "border-red-500 text-red-400"
-                      }`}
-                    >
-                      {supplier.risk}
-                    </span>
+                    {supplier.risk && (
+                      <span
+                        className={`text-[10px] tracking-widest px-2 py-0.5 border rounded ${
+                          supplier.risk === "PASS"
+                            ? "border-green-500 text-green-400"
+                            : supplier.risk === "CONDITIONAL"
+                            ? "border-yellow-500 text-yellow-400"
+                            : "border-red-500 text-red-400"
+                        }`}
+                      >
+                        {supplier.risk}
+                      </span>
+                    )}
                   </div>
-
                 </div>
 
                 <div className="col-span-3 text-gray-500 text-sm">
@@ -177,7 +159,6 @@ export default function SuppliersPage() {
                     Assess
                   </button>
                 </div>
-
               </div>
             );
           })}
