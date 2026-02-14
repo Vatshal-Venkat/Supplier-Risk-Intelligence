@@ -5,17 +5,16 @@ import api from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
 
 export default function LoginPage() {
-  const { login } = useAuth();
+  
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
 
-  const handleLogin = async () => {
-    const res = await api.post("/auth/login", {
-      username,
-      password,
-    });
-    login(res.data.access_token);
-  };
+  const { login } = useAuth();
+
+   const handleLogin = async () => {
+    await login(username, password);
+   };
+
 
   return (
     <main className="min-h-screen flex items-center justify-center bg-[#070b12] text-white">

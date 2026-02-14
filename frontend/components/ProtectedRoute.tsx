@@ -21,7 +21,7 @@ export default function ProtectedRoute({
         router.push("/");
       }
     }
-  }, [user, loading]);
+  }, [user, loading, requireAdmin, router]);
 
   if (loading || !user) return null;
 

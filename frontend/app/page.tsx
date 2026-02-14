@@ -85,7 +85,7 @@ export default function Home() {
             </button>
 
             <button
-              onClick={() => router.push("/register")}
+              onClick={() => router.push("/suppliers/new")}
               className="px-6 py-3 rounded-xl border border-zinc-700 hover:border-white transition"
             >
               Register New Vendor

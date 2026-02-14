@@ -1,7 +1,7 @@
 "use client";
 
 import { createContext, useContext, useEffect, useState } from "react";
-import axios from "axios";
+import api from "@/lib/api";
 
 type User = {
   id: number;
@@ -12,43 +12,46 @@ type User = {
 type AuthContextType = {
   user: User | null;
   loading: boolean;
-  login: (token: string) => void;
+  login: (username: string, password: string) => Promise<void>;
   logout: () => void;
 };
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+let memoryToken: string | null = null;
+
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    const token = localStorage.getItem("token");
-    if (!token) {
+  const fetchUser = async () => {
+    try {
+      const res = await api.get("/auth/me");
+      setUser(res.data);
+    } catch {
+      memoryToken = null;
+      setUser(null);
+    } finally {
       setLoading(false);
-      return;
     }
+  };
 
-    axios
-      .get("http://127.0.0.1:8000/auth/me", {
-        headers: { Authorization: `Bearer ${token}` },
-      })
-      .then(res => {
-        setUser(res.data);
-      })
-      .catch(() => {
-        localStorage.removeItem("token");
-      })
-      .finally(() => setLoading(false));
+  useEffect(() => {
+    if (memoryToken) {
+      fetchUser();
+    } else {
+      setLoading(false);
+    }
   }, []);
 
-  const login = (token: string) => {
-    localStorage.setItem("token", token);
-    window.location.reload();
+  const login = async (username: string, password: string) => {
+    const res = await api.post("/auth/login", { username, password });
+    memoryToken = res.data.access_token;
+    await fetchUser();
   };
 
   const logout = () => {
-    localStorage.removeItem("token");
+    memoryToken = null;
     setUser(null);
     window.location.href = "/login";
   };
@@ -64,4 +67,8 @@ export function useAuth() {
   const context = useContext(AuthContext);
   if (!context) throw new Error("useAuth must be used inside AuthProvider");
   return context;
+}
+
+export function getToken() {
+  return memoryToken;
 }
