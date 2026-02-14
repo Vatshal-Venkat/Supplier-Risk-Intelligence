@@ -1,4 +1,5 @@
-from sqlalchemy import Column, Integer, String
+from sqlalchemy import Column, Integer, String, DateTime
+from datetime import datetime
 from app.database import Base
 
 
@@ -16,7 +17,7 @@ class SanctionedEntity(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String, index=True, nullable=False)
-    source = Column(String, nullable=False)  # OFAC, BIS, etc.
+    source = Column(String, nullable=False)
 
 
 class CoveredEntity(Base):
@@ -24,3 +25,13 @@ class CoveredEntity(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String, index=True, nullable=False)
+
+
+class AssessmentHistory(Base):
+    __tablename__ = "assessment_history"
+
+    id = Column(Integer, primary_key=True)
+    supplier_id = Column(Integer, index=True)
+    risk_score = Column(Integer)
+    overall_status = Column(String)
+    created_at = Column(DateTime, default=datetime.utcnow)

@@ -1,14 +1,14 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, WebSocket
 from sqlalchemy.orm import Session
 from app.database import get_db
-from app.models import Supplier
+from app.models import Supplier, AssessmentHistory
 from app.schemas import SupplierCreate, SupplierResponse
 from rapidfuzz import fuzz
 from typing import List
 from app.services.sanctions_service import check_sanctions
 from app.services.section889_service import evaluate_section_889
 from app.services.assessment_service import run_assessment
-
+import asyncio
 
 router = APIRouter(prefix="/suppliers", tags=["Suppliers"])
 
@@ -27,48 +27,35 @@ def list_suppliers(db: Session = Depends(get_db)):
     return db.query(Supplier).all()
 
 
-@router.get("/search")
-def search_suppliers(query: str, db: Session = Depends(get_db)):
-    suppliers = db.query(Supplier).all()
-
-    results = []
-
-    for supplier in suppliers:
-        name = supplier.name.lower()
-        q = query.lower()
-
-        score = max(
-            fuzz.ratio(q, name),
-            fuzz.token_sort_ratio(q, name),
-            fuzz.token_set_ratio(q, name),
-            fuzz.partial_ratio(q, name)
-        )
-
-        if score > 60:
-            results.append({
-                "id": supplier.id,
-                "name": supplier.name,
-                "country": supplier.country,
-                "industry": supplier.industry,
-                "match_score": score
-            })
-
-    results = sorted(results, key=lambda x: x["match_score"], reverse=True)
-
-    return results
-
-
-
-@router.get("/{supplier_id}/sanctions")
-def supplier_sanctions_check(supplier_id: int, db: Session = Depends(get_db)):
-    return check_sanctions(supplier_id, db)
-
-
-
-@router.get("/{supplier_id}/section-889")
-def section_889_check(supplier_id: int, db: Session = Depends(get_db)):
-    return evaluate_section_889(supplier_id, db)
-
 @router.get("/{supplier_id}/assessment")
 def supplier_assessment(supplier_id: int, db: Session = Depends(get_db)):
     return run_assessment(supplier_id, db)
+
+
+@router.post("/compare")
+def compare_suppliers(supplier_ids: List[int], db: Session = Depends(get_db)):
+    results = []
+    for sid in supplier_ids:
+        results.append(run_assessment(sid, db))
+    return results
+
+
+@router.get("/{supplier_id}/history")
+def supplier_history(supplier_id: int, db: Session = Depends(get_db)):
+    return db.query(AssessmentHistory)\
+        .filter(AssessmentHistory.supplier_id == supplier_id)\
+        .order_by(AssessmentHistory.created_at.asc())\
+        .all()
+
+
+@router.websocket("/stream/{supplier_id}")
+async def stream_supplier(websocket: WebSocket, supplier_id: int):
+    await websocket.accept()
+    from app.database import SessionLocal
+
+    while True:
+        db = SessionLocal()
+        result = run_assessment(supplier_id, db)
+        db.close()
+        await websocket.send_json(result)
+        await asyncio.sleep(5)

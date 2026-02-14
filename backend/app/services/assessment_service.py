@@ -1,6 +1,15 @@
 from sqlalchemy.orm import Session
 from app.services.sanctions_service import check_sanctions
 from app.services.section889_service import evaluate_section_889
+from app.models import AssessmentHistory
+
+
+def generate_executive_brief(overall_status: str):
+    if overall_status == "FAIL":
+        return "Severe compliance exposure detected. Immediate mitigation recommended."
+    if overall_status == "CONDITIONAL":
+        return "Moderate compliance risk identified. Enhanced due diligence advised."
+    return "No material compliance risk detected based on current screening data."
 
 
 def run_assessment(supplier_id: int, db: Session):
@@ -11,12 +20,10 @@ def run_assessment(supplier_id: int, db: Session):
     risk_score = 0
     reasons = []
 
-    # Sanctions logic
     if sanctions_result.get("overall_status") == "FAIL":
         risk_score += 70
         reasons.append("Supplier matched sanctions list")
 
-    # Section 889 logic
     if section889_result.get("section_889_status") == "FAIL":
         risk_score += 30
         reasons.append(section889_result.get("reason"))
@@ -25,7 +32,6 @@ def run_assessment(supplier_id: int, db: Session):
         risk_score += 15
         reasons.append(section889_result.get("reason"))
 
-    # Determine final status
     if risk_score >= 70:
         overall_status = "FAIL"
     elif risk_score >= 30:
@@ -33,7 +39,17 @@ def run_assessment(supplier_id: int, db: Session):
     else:
         overall_status = "PASS"
 
-    # Backend-driven graph structure
+    executive_brief = generate_executive_brief(overall_status)
+
+    # Save history
+    history = AssessmentHistory(
+        supplier_id=supplier_id,
+        risk_score=risk_score,
+        overall_status=overall_status
+    )
+    db.add(history)
+    db.commit()
+
     graph = {
         "nodes": [
             {"id": sanctions_result.get("supplier"), "risk": overall_status},
@@ -53,5 +69,6 @@ def run_assessment(supplier_id: int, db: Session):
         "sanctions": sanctions_result,
         "section_889": section889_result,
         "explanations": reasons,
-        "graph": graph
+        "graph": graph,
+        "executive_brief": executive_brief
     }
