@@ -2,6 +2,7 @@ from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, Boolean
 from sqlalchemy.orm import relationship
 from datetime import datetime
 from app.database import Base
+from sqlalchemy import JSON
 
 
 class User(Base):
@@ -69,3 +70,15 @@ class ScoringConfig(Base):
     section889_conditional_weight = Column(Integer, default=15)
     version = Column(String, default="v1")
     active = Column(Boolean, default=True)
+
+
+class AuditLog(Base):
+    __tablename__ = "audit_logs"
+
+    id = Column(Integer, primary_key=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=True)
+    action = Column(String, nullable=False)
+    resource_type = Column(String, nullable=False)
+    resource_id = Column(Integer, nullable=True)
+    metadata = Column(JSON, nullable=True)
+    timestamp = Column(DateTime, default=datetime.utcnow)

@@ -7,7 +7,7 @@ from app.services.sanctions_loader import load_sanctions
 from app.services.covered_loader import load_covered_entities
 
 # Create DB tables
-models.Base.metadata.create_all(bind=engine)
+
 
 app = FastAPI(title="Supplier Risk Intelligence Platform")
 

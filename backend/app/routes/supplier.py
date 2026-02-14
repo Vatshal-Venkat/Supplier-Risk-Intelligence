@@ -3,10 +3,7 @@ from sqlalchemy.orm import Session
 from app.database import get_db
 from app.models import Supplier, AssessmentHistory
 from app.schemas import SupplierCreate, SupplierResponse
-from rapidfuzz import fuzz
 from typing import List
-from app.services.sanctions_service import check_sanctions
-from app.services.section889_service import evaluate_section_889
 from app.services.assessment_service import run_assessment
 import asyncio
 
@@ -27,6 +24,31 @@ def list_suppliers(db: Session = Depends(get_db)):
     return db.query(Supplier).all()
 
 
+# ✅ NEW OPTIMIZED ENDPOINT
+@router.get("/with-status")
+def list_suppliers_with_status(db: Session = Depends(get_db)):
+    suppliers = db.query(Supplier).all()
+    result = []
+
+    for supplier in suppliers:
+        latest = (
+            db.query(AssessmentHistory)
+            .filter(AssessmentHistory.supplier_id == supplier.id)
+            .order_by(AssessmentHistory.created_at.desc())
+            .first()
+        )
+
+        result.append({
+            "id": supplier.id,
+            "name": supplier.name,
+            "country": supplier.country,
+            "industry": supplier.industry,
+            "risk": latest.overall_status if latest else None,
+        })
+
+    return result
+
+
 @router.get("/{supplier_id}/assessment")
 def supplier_assessment(supplier_id: int, db: Session = Depends(get_db)):
     return run_assessment(supplier_id, db)
@@ -42,10 +64,12 @@ def compare_suppliers(supplier_ids: List[int], db: Session = Depends(get_db)):
 
 @router.get("/{supplier_id}/history")
 def supplier_history(supplier_id: int, db: Session = Depends(get_db)):
-    return db.query(AssessmentHistory)\
-        .filter(AssessmentHistory.supplier_id == supplier_id)\
-        .order_by(AssessmentHistory.created_at.asc())\
+    return (
+        db.query(AssessmentHistory)
+        .filter(AssessmentHistory.supplier_id == supplier_id)
+        .order_by(AssessmentHistory.created_at.asc())
         .all()
+    )
 
 
 @router.websocket("/stream/{supplier_id}")
