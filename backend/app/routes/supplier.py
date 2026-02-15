@@ -23,16 +23,35 @@ def create_supplier(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
+    from app.services.entity_resolution_service import normalize, resolve_supplier_entity
+
+    normalized = normalize(supplier.name)
+
+    existing = (
+        db.query(Supplier)
+        .filter(
+            Supplier.organization_id == current_user.organization_id,
+            Supplier.normalized_name == normalized,
+        )
+        .first()
+    )
+
+    if existing:
+        return existing
+
     db_supplier = Supplier(
         name=supplier.name,
+        normalized_name=normalized,
         country=supplier.country,
         industry=supplier.industry,
-        organization_id=current_user.organization_id,  # 🔥 TENANT LOCK
+        organization_id=current_user.organization_id,
     )
 
     db.add(db_supplier)
     db.commit()
     db.refresh(db_supplier)
+
+    resolve_supplier_entity(db_supplier, db)
 
     log_action(
         db=db,
@@ -44,6 +63,7 @@ def create_supplier(
     )
 
     return db_supplier
+
 
 
 # =====================================================

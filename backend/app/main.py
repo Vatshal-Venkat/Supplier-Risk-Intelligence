@@ -54,13 +54,9 @@ def root():
 @app.on_event("startup")
 def startup_event():
 
-    # Create tables (dev mode)
     Base.metadata.create_all(bind=engine)
 
     db = SessionLocal()
-
-    load_sanctions(db, "data/sanctions.csv")
-    load_covered_entities(db, "data/covered_entities.csv")
 
     existing_config = db.query(models.ScoringConfig).filter(
         models.ScoringConfig.active == True
@@ -71,10 +67,14 @@ def startup_event():
             sanctions_weight=70,
             section889_fail_weight=30,
             section889_conditional_weight=15,
-            version="v1",
+            version="v3",
             active=True,
         )
         db.add(default_config)
         db.commit()
 
     db.close()
+
+    # START BACKGROUND SCHEDULER
+    from app.services.scheduler_service import start_scheduler
+    start_scheduler()
