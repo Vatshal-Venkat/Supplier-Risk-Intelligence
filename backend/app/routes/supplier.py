@@ -176,3 +176,19 @@ def list_suppliers_with_status(db: Session = Depends(get_db)):
         })
 
     return results
+
+
+@router.post("/resolve")
+def resolve_supplier_identity(payload: dict):
+    name = payload.get("name")
+
+    # placeholder logic
+    return {
+        "matches": [
+            {
+                "canonical_name": name,
+                "confidence": 0.95,
+                "country": "Unknown"
+            }
+        ]
+    }

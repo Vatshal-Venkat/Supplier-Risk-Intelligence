@@ -1,16 +1,14 @@
-from fastapi import APIRouter, Response, Depends, HTTPException, Request
+from fastapi import APIRouter, Response, Depends, HTTPException, Request, status
 from sqlalchemy.orm import Session
 
 from app.database import get_db
 from app.models import User, Organization
-from app.schemas import UserCreate, UserLogin  # Using single-file schemas.py
+from app.schemas import UserCreate, UserLogin
 
 from app.core.security import (
     create_access_token,
     create_refresh_token,
     verify_token,
-    get_current_user,
-    require_admin,
     hash_password,
     verify_password,
 )
@@ -21,7 +19,7 @@ router = APIRouter(prefix="/auth", tags=["Auth"])
 # =====================================================
 # REGISTER (Create Organization + Admin User)
 # =====================================================
-@router.post("/register")
+@router.post("/register", status_code=status.HTTP_201_CREATED)
 def register(data: UserCreate, db: Session = Depends(get_db)):
 
     existing_user = db.query(User).filter(
@@ -34,7 +32,6 @@ def register(data: UserCreate, db: Session = Depends(get_db)):
             detail="Username already exists"
         )
 
-    # Create organization (name = username_org for now)
     org = Organization(name=f"{data.username}_org")
     db.add(org)
     db.flush()
@@ -53,7 +50,7 @@ def register(data: UserCreate, db: Session = Depends(get_db)):
 
 
 # =====================================================
-# LOGIN
+# LOGIN (COOKIE-BASED AUTH)
 # =====================================================
 @router.post("/login")
 def login(
@@ -83,30 +80,59 @@ def login(
         {"sub": user.username, "role": user.role}
     )
 
+    # Access Token Cookie
     response.set_cookie(
         key="access_token",
         value=access_token,
         httponly=True,
         samesite="lax",
-        secure=False,  # True in production
+        secure=False,  # True in production (HTTPS)
+        max_age=60 * 60,  # 1 hour
     )
 
+    # Refresh Token Cookie
     response.set_cookie(
         key="refresh_token",
         value=refresh_token,
         httponly=True,
         samesite="lax",
         secure=False,
+        max_age=60 * 60 * 24 * 7,  # 7 days
     )
 
     return {"message": "Logged in successfully"}
 
 
 # =====================================================
-# GET CURRENT USER
+# GET CURRENT USER (READ FROM COOKIE)
 # =====================================================
 @router.get("/me")
-def get_me(user: User = Depends(get_current_user)):
+def get_me(
+    request: Request,
+    db: Session = Depends(get_db)
+):
+
+    access_token = request.cookies.get("access_token")
+
+    if not access_token:
+        raise HTTPException(
+            status_code=401,
+            detail="Not authenticated"
+        )
+
+    payload = verify_token(access_token, "access")
+
+    username = payload.get("sub")
+
+    user = db.query(User).filter(
+        User.username == username
+    ).first()
+
+    if not user:
+        raise HTTPException(
+            status_code=401,
+            detail="User not found"
+        )
 
     return {
         "id": user.id,
@@ -120,7 +146,10 @@ def get_me(user: User = Depends(get_current_user)):
 # REFRESH ACCESS TOKEN
 # =====================================================
 @router.post("/refresh")
-def refresh(request: Request, response: Response):
+def refresh(
+    request: Request,
+    response: Response,
+):
 
     refresh_token = request.cookies.get("refresh_token")
 
@@ -145,6 +174,7 @@ def refresh(request: Request, response: Response):
         httponly=True,
         samesite="lax",
         secure=False,
+        max_age=60 * 60,
     )
 
     return {"message": "Token refreshed"}
@@ -163,9 +193,22 @@ def logout(response: Response):
 
 
 # =====================================================
-# ADMIN LOCKED ROUTE
+# ADMIN PROTECTED ROUTE
 # =====================================================
 @router.get("/config")
-def get_config(user: User = Depends(require_admin)):
+def get_config(
+    request: Request,
+    db: Session = Depends(get_db)
+):
+
+    access_token = request.cookies.get("access_token")
+
+    if not access_token:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+
+    payload = verify_token(access_token, "access")
+
+    if payload.get("role") != "ADMIN":
+        raise HTTPException(status_code=403, detail="Admin access required")
 
     return {"secure": True}
