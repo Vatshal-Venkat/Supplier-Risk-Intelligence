@@ -43,7 +43,6 @@ api.interceptors.response.use(
       requestUrl.includes("/auth/refresh") ||
       requestUrl.includes("/auth/logout");
 
-    // Only attempt refresh for non-auth endpoints
     if (
       status === 401 &&
       !originalRequest?._retry &&
@@ -66,13 +65,7 @@ api.interceptors.response.use(
         return api(originalRequest);
       } catch (refreshError) {
         processQueue(refreshError);
-
-        // Hard redirect to login if refresh fails
-        if (typeof window !== "undefined") {
-          window.location.href = "/login";
-        }
-
-        return Promise.reject(refreshError);
+        return Promise.reject(refreshError); // ❌ NO REDIRECT HERE
       } finally {
         isRefreshing = false;
       }

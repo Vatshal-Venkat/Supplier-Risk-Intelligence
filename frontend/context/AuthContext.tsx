@@ -14,6 +14,7 @@ type User = {
   id: number;
   username: string;
   role: "ADMIN" | "VIEWER";
+  organization_id?: number;
 };
 
 type AuthContextType = {
@@ -38,16 +39,19 @@ export function AuthProvider({
   const [toast, setToast] = useState<string | null>(null);
 
   const toastTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const hasTriedRefresh = useRef(false);
 
   // ===============================
   // Fetch Logged In User
   // ===============================
-  const fetchUser = async () => {
+  const fetchUser = async (): Promise<boolean> => {
     try {
       const res = await api.get("/auth/me");
       setUser(res.data);
+      return true;
     } catch {
       setUser(null);
+      return false;
     }
   };
 
@@ -64,15 +68,24 @@ export function AuthProvider({
   };
 
   // ===============================
-  // Initial Load
+  // Initial Load (Safe + Stable)
   // ===============================
   useEffect(() => {
     const init = async () => {
-      try {
-        await fetchUser();
-      } finally {
-        setLoading(false);
+      const success = await fetchUser();
+
+      // If access token expired, try refresh ONCE
+      if (!success && !hasTriedRefresh.current) {
+        hasTriedRefresh.current = true;
+        try {
+          await api.post("/auth/refresh");
+          await fetchUser();
+        } catch {
+          setUser(null);
+        }
       }
+
+      setLoading(false);
     };
 
     init();
@@ -106,7 +119,6 @@ export function AuthProvider({
         password: password.trim(),
       });
 
-      // Auto login after register
       await login(username, password);
     } catch (error) {
       const err = error as AxiosError;
@@ -127,7 +139,7 @@ export function AuthProvider({
   };
 
   // ===============================
-  // Toast
+  // Toast System
   // ===============================
   const showToast = (message: string) => {
     if (toastTimeoutRef.current) {

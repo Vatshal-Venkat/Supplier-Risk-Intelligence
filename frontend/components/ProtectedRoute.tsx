@@ -16,16 +16,21 @@ export default function ProtectedRoute({
   const pathname = usePathname();
 
   useEffect(() => {
-    if (!loading) {
-      if (!user) {
-        router.push(`/login?redirect=${pathname}`);
-      } else if (requireAdmin && user.role !== "ADMIN") {
-        router.push("/");
-      }
+    if (loading) return;
+
+    if (!user) {
+      router.replace(`/login?redirect=${pathname}`);
+      return;
+    }
+
+    if (requireAdmin && user.role !== "ADMIN") {
+      router.replace("/");
     }
   }, [user, loading, requireAdmin, router, pathname]);
 
-  if (loading || !user) return null;
+  if (loading) return null;
+
+  if (!user) return null;
 
   return <>{children}</>;
 }
