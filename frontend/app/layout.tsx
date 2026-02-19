@@ -31,11 +31,11 @@ export default function RootLayout({
       >
         <AuthProvider>
           <div className="min-h-screen flex flex-col">
-            {/* Global Navigation */}
+            {/* Fixed Global Navigation */}
             <Navbar />
 
             {/* Page Content */}
-            <main className="flex-1">
+            <main className="flex-1 pt-20">
               {children}
             </main>
           </div>
