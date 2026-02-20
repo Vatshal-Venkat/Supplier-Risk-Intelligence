@@ -23,58 +23,89 @@ This platform allows organizations to:
 
 ## Architecture
 
-Frontend: - Next.js (App Router, TypeScript) - Tailwind CSS - Cytoscape
-& Force Graph (Graph visualization) - Recharts (Analytics dashboards) -
-Axios (API communication)
+Frontend: 
+- Next.js (App Router, TypeScript) 
+- Tailwind CSS
+- Cytoscape& Force Graph (Graph visualization)
+- Recharts (Analytics dashboards)
+- Axios (API communication)
 
-Backend: - FastAPI - SQLAlchemy ORM - Alembic (Migrations) - PostgreSQL
-(Relational DB) - Neo4j (Graph DB) - JWT Authentication - RapidFuzz
-(Sanction name matching) - APScheduler (Scheduled jobs)
+Backend: 
+- FastAPI
+- SQLAlchemy ORM
+- Alembic (Migrations)
+- PostgreSQL (Relational DB)
+- Neo4j (Graph DB)
+- JWT Authentication
+- RapidFuzz (Sanction name matching)
+- APScheduler (Scheduled jobs)
 
 ------------------------------------------------------------------------
 
 ## Project Structure
 
-Supplier-Risk-Intelligence/ │ ├── backend/ │ ├── app/ │ ├── alembic/ │
-├── requirements.txt │ ├── frontend/ │ ├── app/ │ ├── components/ │ ├──
-package.json │ └── README.md
+Supplier-Risk-Intelligence/
+│
+
+├── backend/
+
+│ ├── app/
+
+│ ├── alembic/
+
+│ ├── requirements.txt
+
+│
+
+├── frontend/
+
+│ ├── app/
+
+│ ├── components/
+
+│ ├── package.json
+
+│
+
+└── README.md
 
 ------------------------------------------------------------------------
 
 ## Backend Setup
 
 1.  Navigate to Backend
-
+```bash
 cd backend
-
+```
 2.  Create Virtual Environment
-
-Windows: python -m venv venv venv`\Scripts`{=tex}`\activate`{=tex}
+```bash
+python -m venv venv
+venv\Scripts\activate
 
 Mac/Linux: python3 -m venv venv source venv/bin/activate
-
+```
 3.  Install Dependencies
-
+```
 pip install -r requirements.txt
-
+```
 4.  Configure Environment Variables
 
 Create a `.env` file inside `backend/`:
-
+```
 DATABASE_URL=postgresql://user:password@localhost:5432/supplierdb
 SECRET_KEY=your_secret_key NEO4J_URI=neo4j://localhost:7687
 NEO4J_USER=neo4j NEO4J_PASSWORD=password
-
+```
 5.  Run Migrations
-
+```
 alembic upgrade head
-
+```
 6.  Start Backend Server
-
+```
 uvicorn app.main:app --reload
 
 API Docs: http://localhost:8000/docs
-
+```
 ------------------------------------------------------------------------
 
 ## Database Requirements
@@ -91,17 +122,17 @@ Ensure both services are running before starting the backend.
 ## Frontend Setup
 
 1.  Navigate to Frontend
-
+```
 cd frontend
-
+```
 2.  Install Dependencies
-
+```
 npm install
-
+```
 3.  Run Development Server
-
+```
 npm run dev
-
+```
 Frontend: http://localhost:3000
 
 Ensure backend is running on port 8000.
@@ -129,33 +160,6 @@ Risk is calculated based on:
 Neo4j is used for multi-hop relationship analysis.
 
 ------------------------------------------------------------------------
-
-## Deployment Strategy (Recommended)
-
--   Frontend → Vercel
--   Backend → Docker container (AWS / Azure / DigitalOcean)
--   PostgreSQL → Managed RDS
--   Neo4j → Neo4j Aura
--   Environment variables → Secure secret manager
-
-------------------------------------------------------------------------
-
-## Current Limitations
-
--   No Redis caching yet
--   No background task queue
--   Limited monitoring/logging
--   Rate limiting not implemented
-
-------------------------------------------------------------------------
-
-## Future Improvements
-
--   Add Redis caching
--   Introduce background workers (Celery)
--   Add monitoring (Prometheus/Grafana)
--   Add CI/CD pipeline
--   Improve audit logging
 
 ------------------------------------------------------------------------
 
