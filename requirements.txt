@@ -1,9 +1,0 @@
-fastapi
-uvicorn
-sqlalchemy
-python-dotenv
-rapidfuzz
-passlib[bcrypt]
-python-jose[cryptography]
-pydantic
-alembic
