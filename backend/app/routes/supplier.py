@@ -1,8 +1,8 @@
-from fastapi import APIRouter, Depends, WebSocket, HTTPException
+from fastapi import APIRouter, Depends, WebSocket, HTTPException, Query
 from sqlalchemy.orm import Session
-from typing import List
+from typing import List, Optional
 import asyncio
-from sqlalchemy import desc
+from sqlalchemy import desc, func, text, case
 from sqlalchemy.exc import IntegrityError
 
 from app.database import get_db, SessionLocal
@@ -20,9 +20,71 @@ from app.services.audit_service import log_action
 from app.core.security import get_current_user
 from app.graph.supplier_graph_service import create_supplier_node
 from app.graph.graph_client import get_session
+from app.services.entity_resolution_service import normalize
 
 router = APIRouter(prefix="/suppliers", tags=["Suppliers"])
 
+
+# =====================================================
+# SUPPLIER SEARCH (TRIGRAM + BOOSTED RANKING)
+# =====================================================
+@router.get("/search", response_model=List[SupplierResponse])
+def search_suppliers(
+    query: str = Query(..., min_length=2),
+    country: Optional[str] = None,
+    limit: int = 20,
+    offset: int = 0,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+
+    normalized_query = normalize(query)
+
+    similarity_score = func.similarity(
+        Supplier.normalized_name,
+        normalized_query
+    )
+
+    base_query = (
+        db.query(
+            Supplier,
+            similarity_score.label("score")
+        )
+        .filter(
+            Supplier.organization_id == current_user.organization_id
+        )
+    )
+
+    if country:
+        base_query = base_query.filter(Supplier.country == country)
+
+    base_query = base_query.filter(
+        similarity_score > 0.2
+    )
+
+    results = (
+        base_query
+        .order_by(
+            desc(
+                similarity_score
+                + case(
+                    (Supplier.normalized_name == normalized_query, 1.0),
+                    else_=0.0
+                )
+                + case(
+                    (Supplier.normalized_name.like(f"{normalized_query}%"), 0.5),
+                    else_=0.0
+                )
+            )
+        )
+        .limit(limit)
+        .offset(offset)
+        .all()
+    )
+
+    suppliers = [row[0] for row in results]
+
+    return suppliers
 
 # =====================================================
 # CREATE SUPPLIER
@@ -33,11 +95,10 @@ def create_supplier(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    from app.services.entity_resolution_service import normalize, resolve_supplier_entity
+    from app.services.entity_resolution_service import resolve_supplier_entity
 
     normalized = normalize(supplier.name)
 
-    # ✅ Duplicate check now includes country
     existing = (
         db.query(Supplier)
         .filter(
@@ -73,16 +134,13 @@ def create_supplier(
             detail="Duplicate supplier detected at database level."
         )
 
-    # Entity Resolution
     resolve_supplier_entity(db_supplier, db)
 
-    # Neo4j Graph Node
     try:
         create_supplier_node(db_supplier.name)
     except Exception as e:
         print(f"⚠️ Graph node creation failed: {e}")
 
-    # Audit Log
     log_action(
         db=db,
         user_id=current_user.id,
@@ -93,7 +151,6 @@ def create_supplier(
     )
 
     return db_supplier
-
 
 # =====================================================
 # LIST SUPPLIERS (BASIC)
@@ -108,7 +165,6 @@ def list_suppliers(
         .filter(Supplier.organization_id == current_user.organization_id)
         .all()
     )
-
 
 # =====================================================
 # LIST SUPPLIERS WITH LATEST STATUS

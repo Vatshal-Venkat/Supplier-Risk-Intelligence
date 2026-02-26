@@ -1,6 +1,6 @@
 import os
 from dotenv import load_dotenv
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker, declarative_base
 
 load_dotenv()
@@ -21,6 +21,15 @@ SessionLocal = sessionmaker(
 )
 
 Base = declarative_base()
+
+
+# -----------------------------------------------------
+# ENABLE TRIGRAM EXTENSION (POSTGRES ONLY)
+# -----------------------------------------------------
+if "postgresql" in DATABASE_URL:
+    with engine.connect() as conn:
+        conn.execute(text("CREATE EXTENSION IF NOT EXISTS pg_trgm;"))
+        conn.commit()
 
 
 def get_db():
