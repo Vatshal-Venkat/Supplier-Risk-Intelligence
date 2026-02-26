@@ -24,8 +24,6 @@ from app.services.entity_resolution_service import normalize
 
 router = APIRouter(prefix="/suppliers", tags=["Suppliers"])
 
-
-
 # =====================================================
 # SUPPLIER SEARCH (TRIGRAM + BOOSTED RANKING)
 # =====================================================
@@ -89,7 +87,6 @@ def search_suppliers(
     suppliers = [row[0] for row in results]
 
     return suppliers
-
 
 # =====================================================
 # CREATE SUPPLIER
@@ -158,7 +155,6 @@ def create_supplier(
 
     return db_supplier
 
-
 # =====================================================
 # LIST SUPPLIERS (BASIC)
 # =====================================================
@@ -182,7 +178,6 @@ def list_suppliers(
         .offset(offset)
         .all()
     )
-
 
 # =====================================================
 # LIST SUPPLIERS WITH LATEST STATUS
@@ -224,7 +219,6 @@ def list_suppliers_with_status(
 
     return results
 
-
 # =====================================================
 # IDENTITY RESOLUTION (TENANT SAFE)
 # =====================================================
@@ -261,7 +255,6 @@ def resolve_supplier_identity(
             })
 
     return {"matches": matches}
-
 
 # =====================================================
 # SUPPLIER PROFILE (AGGREGATED VIEW)
@@ -406,7 +399,6 @@ def get_supplier_profile(
 
     except Exception as e:
         print(f"Graph enterprise query failed: {e}")
-
     # =====================================================
     # Final Response
     # =====================================================
@@ -485,8 +477,6 @@ def supplier_assessment(
     )
 
     return result
-
-
 # =====================================================
 # SUPPLIER HISTORY
 # =====================================================
@@ -525,7 +515,6 @@ def supplier_history(
     }
     for h in history
 ]
-
 # =====================================================
 # ASSESSMENT DELTA COMPARISON
 # =====================================================
@@ -537,7 +526,6 @@ def compare_assessments(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-
     supplier = (
         db.query(Supplier)
         .filter(
@@ -557,15 +545,12 @@ def compare_assessments(
         id=assessment_a_id,
         supplier_id=supplier_id
     ).first()
-
     b = db.query(AssessmentHistory).filter_by(
         id=assessment_b_id,
         supplier_id=supplier_id
     ).first()
-
     if not a or not b:
         raise HTTPException(status_code=404, detail="Assessment not found")
-
     return {
         "risk_score_delta": b.risk_score - a.risk_score,
         "sanctions_flag_delta": int(b.sanctions_flag) - int(a.sanctions_flag),
@@ -599,7 +584,6 @@ async def stream_supplier(websocket: WebSocket, supplier_id: int):
         await websocket.send_json(result)
         await asyncio.sleep(5)
 
-
 # =====================================================
 # SUPPLIER COMPARISON
 # =====================================================
@@ -616,5 +600,4 @@ def compare_two_suppliers(
         db=db,
         organization_id=current_user.organization_id,
     )
-
     return result
