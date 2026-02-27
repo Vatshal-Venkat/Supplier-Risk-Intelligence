@@ -102,4 +102,13 @@ export const intelligenceAPI = {
     api.get(`/suppliers/${id}/graph`),
 };
 
+export const auditAPI = {
+  list: (params?: {
+    user_id?: number;
+    action?: string;
+    resource_type?: string;
+  }) =>
+    api.get("/audit", { params }),
+};
+
 export default api;
