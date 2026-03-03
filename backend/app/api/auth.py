@@ -22,6 +22,12 @@ router = APIRouter(prefix="/auth", tags=["Auth"])
 @router.post("/register", status_code=status.HTTP_201_CREATED)
 def register(data: UserCreate, db: Session = Depends(get_db)):
 
+    if " " in data.username:
+        raise HTTPException(
+            status_code=400,
+            detail="Username cannot contain spaces"
+        )
+
     existing_user = db.query(User).filter(
         User.username == data.username
     ).first()
