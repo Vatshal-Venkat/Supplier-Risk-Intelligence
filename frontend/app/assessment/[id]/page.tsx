@@ -25,6 +25,12 @@ type AssessmentData = {
   sanctions: any;
   section_889: any;
   explanations: string[];
+  breakdown?: {
+    sanctions: number;
+    section_889: number;
+    news: number;
+    graph: number;
+  };
   timeline?: TimelineEvent[];
   audit_log?: AuditEntry[];
   risk_history?: number[];
@@ -123,13 +129,41 @@ export default function AssessmentPage() {
         </div>
 
         {/* Risk Score */}
-        <div className="border border-zinc-800 rounded-lg p-8 bg-[#0b111b]">
-          <div className="text-xs uppercase tracking-widest text-gray-500">
-            Overall Risk Score
+        <div className="border border-zinc-800 rounded-lg p-8 bg-[#0b111b] flex flex-col md:flex-row gap-8">
+          <div className="flex-1">
+            <div className="text-xs uppercase tracking-widest text-gray-500">
+              Overall Risk Score
+            </div>
+            <div className="text-5xl font-semibold mt-3">
+              {data.risk_score}
+            </div>
           </div>
-          <div className="text-5xl font-semibold mt-3">
-            {data.risk_score}
-          </div>
+
+          {data.breakdown && (
+            <div className="flex-1 border-t md:border-t-0 md:border-l border-zinc-800 pt-6 md:pt-0 md:pl-8">
+              <div className="text-xs uppercase tracking-widest text-gray-500 mb-4">
+                Risk Breakdown
+              </div>
+              <div className="space-y-3 text-sm">
+                <div className="flex justify-between items-center">
+                  <span className="text-gray-400">Sanctions</span>
+                  <span className="font-mono">{data.breakdown.sanctions}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-gray-400">Section 889</span>
+                  <span className="font-mono">{data.breakdown.section_889}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-gray-400">Negative Media Signal</span>
+                  <span className="font-mono">{data.breakdown.news}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-gray-400">Network & Graph Risk</span>
+                  <span className="font-mono">{data.breakdown.graph}</span>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* 🔥 Trust Graph Section */}
