@@ -29,9 +29,9 @@ def init_driver():
         # Optional: verify connectivity at startup
         try:
             driver.verify_connectivity()
-            print("✅ Neo4j connection established.")
+            print("Neo4j connection established.")
         except ServiceUnavailable as e:
-            print("❌ Neo4j connection failed:", e)
+            print("Neo4j connection failed:", e)
             driver = None
 
 
