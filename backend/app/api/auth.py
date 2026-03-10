@@ -92,8 +92,8 @@ def login(
         value=access_token,
         httponly=True,
         samesite="lax",
-        secure=False,
-        max_age=60 * 60,  # 1 hour
+        secure=False,  # Set to True in production with HTTPS
+        max_age=60 * 60,
         path="/",
     )
 
@@ -104,7 +104,7 @@ def login(
         httponly=True,
         samesite="lax",
         secure=False,
-        max_age=60 * 60 * 24 * 7,  # 7 days
+        max_age=60 * 60 * 24 * 7,
         path="/",
     )
 
@@ -119,7 +119,6 @@ def get_me(
     request: Request,
     db: Session = Depends(get_db)
 ):
-
     access_token = request.cookies.get("access_token")
 
     if not access_token:
@@ -159,7 +158,6 @@ def refresh(
     request: Request,
     response: Response,
 ):
-
     refresh_token = request.cookies.get("refresh_token")
 
     if not refresh_token:
