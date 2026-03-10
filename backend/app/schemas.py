@@ -9,6 +9,9 @@ class SupplierCreate(BaseModel):
     name: str
     country: Optional[str] = None
     industry: Optional[str] = None
+    address: Optional[str] = None
+    naics_code: Optional[str] = None
+    certifications: Optional[list[str]] = None
 
 
 class SupplierResponse(BaseModel):
@@ -16,6 +19,9 @@ class SupplierResponse(BaseModel):
     name: str
     country: Optional[str]
     industry: Optional[str]
+    address: Optional[str] = None
+    naics_code: Optional[str] = None
+    certifications: Optional[list[str]] = None
 
     class Config:
         from_attributes = True
