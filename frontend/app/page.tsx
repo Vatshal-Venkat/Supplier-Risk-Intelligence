@@ -105,7 +105,7 @@ export default function Home() {
                       try {
                         const res = await api.get("/suppliers/search", {
                           params: {
-                            query: val.trim() || undefined,
+                            ...(val.trim().length >= 2 ? { query: val.trim() } : {}),
                             country: selectedCountry || undefined,
                             industry: selectedIndustry || undefined
                           }
