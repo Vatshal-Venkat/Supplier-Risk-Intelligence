@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import api from "@/lib/api";
 
 function AnimatedNumber({ value }: { value: number }) {
   const [display, setDisplay] = useState(0);
@@ -33,6 +34,13 @@ export default function Home() {
   // Search and Identity Resolution State
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [confirmEntity, setConfirmEntity] = useState<any | null>(null);
+  
+  // Advanced Search State
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedCountry, setSelectedCountry] = useState("");
+  const [selectedIndustry, setSelectedIndustry] = useState("");
+  const [showFilters, setShowFilters] = useState(false);
+  const [isSearching, setIsSearching] = useState(false);
 
   useEffect(() => {
     setTimeout(() => setUnderlineWidth(220), 300);
@@ -86,20 +94,41 @@ export default function Home() {
                 <svg className="w-5 h-5 text-gray-400 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
                 <input
                   type="text"
-                  placeholder="Search supplier by name, trade name, country, or commodity code..."
+                  value={searchQuery}
+                  placeholder="Search by name, NAICS, industry code, or country..."
                   className="w-full bg-transparent border-none text-white placeholder-gray-500 focus:outline-none py-4 text-base"
-                  onChange={(e) => {
-                    // Mocking search behavior: if length > 2, show mock results
-                    if (e.target.value.length > 2) {
-                      setSearchResults([
-                        { id: '1', name: "Acme Steel, LLC", country: "United States", industry: "Manufacturing", website: "acmesteelllc.com" },
-                        { id: '2', name: "Acme Steel Inc (Shanghai)", country: "China", industry: "Manufacturing", website: "acmesteel.cn" },
-                      ]);
+                  onChange={async (e) => {
+                    const val = e.target.value;
+                    setSearchQuery(val);
+                    if (val.length > 2) {
+                      setIsSearching(true);
+                      try {
+                        const res = await api.get("/suppliers/search", {
+                          params: {
+                            query: val.trim() || undefined,
+                            country: selectedCountry || undefined,
+                            industry: selectedIndustry || undefined
+                          }
+                        });
+                        setSearchResults(res.data.map((r: any) => r[0] || r));
+                      } catch (err) {
+                        console.error("Search failed:", err);
+                      } finally {
+                        setIsSearching(false);
+                      }
                     } else {
                       setSearchResults([]);
                     }
                   }}
                 />
+                
+                {/* Advanced Filters Toggle */}
+                <button 
+                  onClick={() => setShowFilters(!showFilters)}
+                  className={`px-3 py-1 mr-2 rounded-md text-xs font-medium transition-colors ${showFilters ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30' : 'bg-white/5 text-gray-400 border border-white/10 hover:bg-white/10'}`}
+                >
+                  {showFilters ? 'Close Filters' : 'Filters'}
+                </button>
               </div>
               <button
                 onClick={() => router.push("/suppliers/new")}
@@ -108,6 +137,41 @@ export default function Home() {
                 Register New
               </button>
             </div>
+
+            {/* Expanded Filters UI */}
+            {showFilters && (
+              <div className="mt-3 p-4 bg-white/5 border border-white/10 rounded-xl max-w-3xl grid grid-cols-2 gap-4 animate-in fade-in slide-in-from-top-2 duration-200">
+                <div>
+                  <label className="block text-xs font-medium text-gray-500 uppercase tracking-widest mb-2">Location Filter</label>
+                  <select 
+                    value={selectedCountry}
+                    onChange={(e) => setSelectedCountry(e.target.value)}
+                    className="w-full bg-[#0b111b] border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500/50"
+                  >
+                    <option value="">All Locations</option>
+                    <option value="United States">United States</option>
+                    <option value="China">China</option>
+                    <option value="Germany">Germany</option>
+                    <option value="India">India</option>
+                    <option value="Japan">Japan</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-500 uppercase tracking-widest mb-2">Industry/NAICS Segment</label>
+                  <select 
+                    value={selectedIndustry}
+                    onChange={(e) => setSelectedIndustry(e.target.value)}
+                    className="w-full bg-[#0b111b] border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500/50"
+                  >
+                    <option value="">All Industries</option>
+                    <option value="331110">Iron and Steel Mills (331110)</option>
+                    <option value="Manufacturing">General Manufacturing</option>
+                    <option value="Technology">Technology & Software</option>
+                    <option value="Logistics">Logistics & Supply Chain</option>
+                  </select>
+                </div>
+              </div>
+            )}
 
             {/* Disambiguation UI */}
             {searchResults.length > 0 && (
