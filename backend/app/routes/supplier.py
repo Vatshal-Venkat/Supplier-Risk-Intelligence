@@ -71,13 +71,16 @@ def search_suppliers(
     if industry:
         base_query = base_query.filter(Supplier.industry.ilike(f"%{industry}%"))
 
-    # Relevancy threshold only if query exists
+    # Relevancy threshold
     if query:
+        search_pattern = f"%{query}%"
         base_query = base_query.filter(
             or_(
                 func.similarity(Supplier.normalized_name, normalize(query)) > 0.15,
                 func.similarity(Supplier.industry, query) > 0.3,
-                func.similarity(Supplier.country, query) > 0.4
+                func.similarity(Supplier.country, query) > 0.4,
+                Supplier.address.ilike(search_pattern),
+                Supplier.naics_code.ilike(search_pattern)
             )
         )
 
@@ -139,6 +142,9 @@ def create_supplier(
         normalized_name=normalized,
         country=supplier.country,
         industry=supplier.industry,
+        address=supplier.address,
+        naics_code=supplier.naics_code,
+        certifications=supplier.certifications,
         organization_id=current_user.organization_id,
         is_global=False
     )
@@ -230,6 +236,8 @@ def list_suppliers_with_status(
             "name": supplier.name,
             "country": supplier.country,
             "industry": supplier.industry,
+            "address": supplier.address,
+            "naics_code": supplier.naics_code,
             "latest_status": latest_assessment.overall_status if latest_assessment else None,
             "risk_score": latest_assessment.risk_score if latest_assessment else None,
         })
@@ -425,16 +433,18 @@ def get_supplier_profile(
             "legal_entity_name": entity.canonical_name,
             "registration_country": entity.country,
             "industry": supplier.industry,
+            "address": supplier.address,
+            "naics_code": supplier.naics_code,
             "created_at": supplier.created_at,
         },
         "parent_entities": parent_entities,
         "subsidiaries": subsidiaries,
-        "certifications": [],  # reserved for future extension
+        "certifications": supplier.certifications or [],
         "latest_assessment": {
-            "risk_score": latest_assessment.risk_score if latest_assessment else None,
-            "overall_status": latest_assessment.overall_status if latest_assessment else None,
-            "created_at": latest_assessment.created_at if latest_assessment else None,
-        },
+            "risk_score": latest_assessment.risk_score,
+            "overall_status": latest_assessment.overall_status,
+            "created_at": latest_assessment.created_at,
+        } if latest_assessment else None,
         "history": [
             {
                 "id": h.id,
