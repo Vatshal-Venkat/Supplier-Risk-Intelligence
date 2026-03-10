@@ -104,6 +104,9 @@ class Supplier(Base):
     industry = Column(String, nullable=True)
 
     # Dataset enrichment fields
+    address = Column(String, nullable=True)
+    naics_code = Column(String, nullable=True)
+    certifications = Column(JSON, nullable=True)
     annual_revenue = Column(BigInteger, nullable=True)
     ownership_type = Column(String, nullable=True)
     parent_company = Column(String, nullable=True)
