@@ -55,6 +55,7 @@ def verify_token(token: str, expected_type: str):
 
         token_type = payload.get("type")
         if token_type != expected_type:
+            print(f"Auth Error: Token type mismatch. Expected {expected_type}, got {token_type}")
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Invalid token type"
@@ -62,7 +63,8 @@ def verify_token(token: str, expected_type: str):
 
         return payload
 
-    except JWTError:
+    except JWTError as e:
+        print(f"Auth Error: JWTError: {str(e)}")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid or expired token"
