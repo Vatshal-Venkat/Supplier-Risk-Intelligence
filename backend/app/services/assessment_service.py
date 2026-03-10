@@ -139,6 +139,82 @@ def run_assessment(supplier_id: int, db: Session, user_id: int | None = None):
     db.commit()
 
     # ------------------------------------------------------------------
+    # Build Structured Breakdown Factors
+    # ------------------------------------------------------------------
+    sanctions_triggered = bool(
+        sanctions_result and sanctions_result.get("overall_status") == "FAIL"
+    )
+    sanctions_points = config.sanctions_weight if sanctions_triggered else 0
+
+    s889_points = (
+        config.section889_fail_weight if section_status == "FAIL"
+        else (config.section889_conditional_weight if section_status == "CONDITIONAL" else 0)
+    )
+    s889_triggered = section_status in ("FAIL", "CONDITIONAL")
+
+    news_points = news_score or 0
+    news_triggered = news_points > 0
+
+    graph_points = graph_risk or 0
+    graph_triggered = graph_points > 0
+
+    breakdown_factors = [
+        {
+            "key": "sanctions",
+            "label": "Sanctions & Watchlists",
+            "weight": config.sanctions_weight,
+            "max_points": config.sanctions_weight,
+            "points": sanctions_points,
+            "triggered": sanctions_triggered,
+            "reason": (
+                "Active sanctions match detected on one or more watchlists"
+                if sanctions_triggered
+                else "No sanctions or watchlist matches found"
+            ),
+        },
+        {
+            "key": "section_889",
+            "label": "Section 889 Compliance",
+            "weight": config.section889_fail_weight,
+            "max_points": config.section889_fail_weight,
+            "points": s889_points,
+            "triggered": s889_triggered,
+            "status": section_status or "PASS",
+            "reason": (
+                section889_result.get("reason", "Section 889 compliance issue detected")
+                if s889_triggered
+                else "No Section 889 compliance issues found"
+            ),
+        },
+        {
+            "key": "news",
+            "label": "Negative Media Signal",
+            "weight": 50,
+            "max_points": 50,
+            "points": news_points,
+            "triggered": news_triggered,
+            "reason": (
+                f"Negative media signal detected (score: {news_points})"
+                if news_triggered
+                else "No negative media signals detected"
+            ),
+        },
+        {
+            "key": "graph",
+            "label": "Network & Graph Risk",
+            "weight": 50,
+            "max_points": 50,
+            "points": graph_points,
+            "triggered": graph_triggered,
+            "reason": (
+                f"Graph-based relationship risk detected ({graph_points} pts from connected entities)"
+                if graph_triggered
+                else "No elevated risk from entity network relationships"
+            ),
+        },
+    ]
+
+    # ------------------------------------------------------------------
     # Response Payload
     # ------------------------------------------------------------------
     return {
@@ -152,9 +228,9 @@ def run_assessment(supplier_id: int, db: Session, user_id: int | None = None):
         "explanations": reasons,
         "executive_brief": executive_brief,
         "breakdown": {
-            "sanctions": config.sanctions_weight if sanctions_result and sanctions_result.get("overall_status") == "FAIL" else 0,
-            "section_889": config.section889_fail_weight if section_status == "FAIL" else (config.section889_conditional_weight if section_status == "CONDITIONAL" else 0),
-            "news": news_score or 0,
-            "graph": graph_risk or 0,
-        }
+            "factors": breakdown_factors,
+            "total_scored": risk_score,
+            "total_possible": 100,
+            "scoring_version": config.version,
+        },
     }
