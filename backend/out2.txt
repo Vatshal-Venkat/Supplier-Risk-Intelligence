@@ -1,0 +1,131 @@
+Neo4j connection failed: Couldn't connect to localhost:7687 (resolved to ('[::1]:7687', '127.0.0.1:7687')):
+Failed to establish connection to ResolvedIPv6Address(('::1', 7687, 0, 0)) (reason [WinError 10061] No connection could be made because the target machine actively refused it)
+Failed to establish connection to ResolvedIPv4Address(('127.0.0.1', 7687)) (reason [WinError 10061] No connection could be made because the target machine actively refused it)
+Traceback (most recent call last):
+  File "C:\Users\Venkat_Vatshal\OneDrive\Desktop\VDashboard\backend\venv\Lib\site-packages\sqlalchemy\engine\base.py", line 1967, in _exec_single_context
+    self.dialect.do_execute(
+    ~~~~~~~~~~~~~~~~~~~~~~~^
+        cursor, str_statement, effective_parameters, context
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\Venkat_Vatshal\OneDrive\Desktop\VDashboard\backend\venv\Lib\site-packages\sqlalchemy\engine\default.py", line 952, in do_execute
+    cursor.execute(statement, parameters)
+    ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+psycopg2.errors.NotNullViolation: null value in column "normalized_name" of relation "suppliers" violates not-null constraint
+DETAIL:  Failing row contains (314, HUAWEI TECHNOLOGIES CO., LTD., null, CN, null, 1, 2026-03-12 17:40:42.37163, null, null, null, null, f, null, null, null).
+
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "C:\Users\Venkat_Vatshal\OneDrive\Desktop\VDashboard\backend\test_sanctions.py", line 30, in <module>
+    db.commit()
+    ~~~~~~~~~^^
+  File "C:\Users\Venkat_Vatshal\OneDrive\Desktop\VDashboard\backend\venv\Lib\site-packages\sqlalchemy\orm\session.py", line 2030, in commit
+    trans.commit(_to_root=True)
+    ~~~~~~~~~~~~^^^^^^^^^^^^^^^
+  File "<string>", line 2, in commit
+  File "C:\Users\Venkat_Vatshal\OneDrive\Desktop\VDashboard\backend\venv\Lib\site-packages\sqlalchemy\orm\state_changes.py", line 137, in _go
+    ret_value = fn(self, *arg, **kw)
+  File "C:\Users\Venkat_Vatshal\OneDrive\Desktop\VDashboard\backend\venv\Lib\site-packages\sqlalchemy\orm\session.py", line 1311, in commit
+    self._prepare_impl()
+    ~~~~~~~~~~~~~~~~~~^^
+  File "<string>", line 2, in _prepare_impl
+  File "C:\Users\Venkat_Vatshal\OneDrive\Desktop\VDashboard\backend\venv\Lib\site-packages\sqlalchemy\orm\state_changes.py", line 137, in _go
+    ret_value = fn(self, *arg, **kw)
+  File "C:\Users\Venkat_Vatshal\OneDrive\Desktop\VDashboard\backend\venv\Lib\site-packages\sqlalchemy\orm\session.py", line 1286, in _prepare_impl
+    self.session.flush()
+    ~~~~~~~~~~~~~~~~~~^^
+  File "C:\Users\Venkat_Vatshal\OneDrive\Desktop\VDashboard\backend\venv\Lib\site-packages\sqlalchemy\orm\session.py", line 4331, in flush
+    self._flush(objects)
+    ~~~~~~~~~~~^^^^^^^^^
+  File "C:\Users\Venkat_Vatshal\OneDrive\Desktop\VDashboard\backend\venv\Lib\site-packages\sqlalchemy\orm\session.py", line 4466, in _flush
+    with util.safe_reraise():
+         ~~~~~~~~~~~~~~~~~^^
+  File "C:\Users\Venkat_Vatshal\OneDrive\Desktop\VDashboard\backend\venv\Lib\site-packages\sqlalchemy\util\langhelpers.py", line 224, in __exit__
+    raise exc_value.with_traceback(exc_tb)
+  File "C:\Users\Venkat_Vatshal\OneDrive\Desktop\VDashboard\backend\venv\Lib\site-packages\sqlalchemy\orm\session.py", line 4427, in _flush
+    flush_context.execute()
+    ~~~~~~~~~~~~~~~~~~~~~^^
+  File "C:\Users\Venkat_Vatshal\OneDrive\Desktop\VDashboard\backend\venv\Lib\site-packages\sqlalchemy\orm\unitofwork.py", line 466, in execute
+    rec.execute(self)
+    ~~~~~~~~~~~^^^^^^
+  File "C:\Users\Venkat_Vatshal\OneDrive\Desktop\VDashboard\backend\venv\Lib\site-packages\sqlalchemy\orm\unitofwork.py", line 642, in execute
+    util.preloaded.orm_persistence.save_obj(
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        self.mapper,
+        ^^^^^^^^^^^^
+        uow.states_for_mapper_hierarchy(self.mapper, False, False),
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        uow,
+        ^^^^
+    )
+    ^
+  File "C:\Users\Venkat_Vatshal\OneDrive\Desktop\VDashboard\backend\venv\Lib\site-packages\sqlalchemy\orm\persistence.py", line 93, in save_obj
+    _emit_insert_statements(
+    ~~~~~~~~~~~~~~~~~~~~~~~^
+        base_mapper,
+        ^^^^^^^^^^^^
+    ...<3 lines>...
+        insert,
+        ^^^^^^^
+    )
+    ^
+  File "C:\Users\Venkat_Vatshal\OneDrive\Desktop\VDashboard\backend\venv\Lib\site-packages\sqlalchemy\orm\persistence.py", line 1233, in _emit_insert_statements
+    result = connection.execute(
+        statement,
+        params,
+        execution_options=execution_options,
+    )
+  File "C:\Users\Venkat_Vatshal\OneDrive\Desktop\VDashboard\backend\venv\Lib\site-packages\sqlalchemy\engine\base.py", line 1419, in execute
+    return meth(
+        self,
+        distilled_parameters,
+        execution_options or NO_OPTIONS,
+    )
+  File "C:\Users\Venkat_Vatshal\OneDrive\Desktop\VDashboard\backend\venv\Lib\site-packages\sqlalchemy\sql\elements.py", line 527, in _execute_on_connection
+    return connection._execute_clauseelement(
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        self, distilled_params, execution_options
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\Venkat_Vatshal\OneDrive\Desktop\VDashboard\backend\venv\Lib\site-packages\sqlalchemy\engine\base.py", line 1641, in _execute_clauseelement
+    ret = self._execute_context(
+        dialect,
+    ...<8 lines>...
+        cache_hit=cache_hit,
+    )
+  File "C:\Users\Venkat_Vatshal\OneDrive\Desktop\VDashboard\backend\venv\Lib\site-packages\sqlalchemy\engine\base.py", line 1846, in _execute_context
+    return self._exec_single_context(
+           ~~~~~~~~~~~~~~~~~~~~~~~~~^
+        dialect, context, statement, parameters
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\Venkat_Vatshal\OneDrive\Desktop\VDashboard\backend\venv\Lib\site-packages\sqlalchemy\engine\base.py", line 1986, in _exec_single_context
+    self._handle_dbapi_exception(
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        e, str_statement, effective_parameters, cursor, context
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\Venkat_Vatshal\OneDrive\Desktop\VDashboard\backend\venv\Lib\site-packages\sqlalchemy\engine\base.py", line 2363, in _handle_dbapi_exception
+    raise sqlalchemy_exception.with_traceback(exc_info[2]) from e
+  File "C:\Users\Venkat_Vatshal\OneDrive\Desktop\VDashboard\backend\venv\Lib\site-packages\sqlalchemy\engine\base.py", line 1967, in _exec_single_context
+    self.dialect.do_execute(
+    ~~~~~~~~~~~~~~~~~~~~~~~^
+        cursor, str_statement, effective_parameters, context
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\Venkat_Vatshal\OneDrive\Desktop\VDashboard\backend\venv\Lib\site-packages\sqlalchemy\engine\default.py", line 952, in do_execute
+    cursor.execute(statement, parameters)
+    ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+sqlalchemy.exc.IntegrityError: (psycopg2.errors.NotNullViolation) null value in column "normalized_name" of relation "suppliers" violates not-null constraint
+DETAIL:  Failing row contains (314, HUAWEI TECHNOLOGIES CO., LTD., null, CN, null, 1, 2026-03-12 17:40:42.37163, null, null, null, null, f, null, null, null).
+
+[SQL: INSERT INTO suppliers (name, normalized_name, country, industry, address, naics_code, annual_revenue, ownership_type, parent_company, tier_level, organization_id, is_global, created_at) VALUES (%(name)s, %(normalized_name)s, %(country)s, %(industry)s, %(address)s, %(naics_code)s, %(annual_revenue)s, %(ownership_type)s, %(parent_company)s, %(tier_level)s, %(organization_id)s, %(is_global)s, %(created_at)s) RETURNING suppliers.id]
+[parameters: {'name': 'HUAWEI TECHNOLOGIES CO., LTD.', 'normalized_name': None, 'country': 'CN', 'industry': None, 'address': None, 'naics_code': None, 'annual_revenue': None, 'ownership_type': None, 'parent_company': None, 'tier_level': None, 'organization_id': 1, 'is_global': False, 'created_at': datetime.datetime(2026, 3, 12, 17, 40, 42, 371630)}]
+(Background on this error at: https://sqlalche.me/e/20/gkpj)
