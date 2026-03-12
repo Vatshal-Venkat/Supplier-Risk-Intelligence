@@ -10,6 +10,8 @@ export default function SupplierProfilePage() {
     const { id } = useParams();
     const router = useRouter();
     const [data, setData] = useState<any>(null);
+    const [publicData, setPublicData] = useState<any>(null);
+    const [loadingPublicData, setLoadingPublicData] = useState(true);
 
     useEffect(() => {
         if (!id) return;
@@ -18,6 +20,12 @@ export default function SupplierProfilePage() {
             .get(`/suppliers/${id}`)
             .then((res) => setData(res.data))
             .catch(console.error);
+
+        api
+            .get(`/suppliers/${id}/public-data`)
+            .then((res) => setPublicData(res.data))
+            .catch(console.error)
+            .finally(() => setLoadingPublicData(false));
     }, [id]);
 
     if (!data) {
@@ -334,6 +342,196 @@ export default function SupplierProfilePage() {
                                 </div>
                             </section>
                         </div>
+                    </div>
+
+                    {/* ═══════════════════════════════════════════ */}
+                    {/*             PUBLIC INTELLIGENCE             */}
+                    {/* ═══════════════════════════════════════════ */}
+                    <div className="pt-8 border-t border-white/[0.05]">
+                        <div className="flex items-center justify-between mb-8">
+                            <div>
+                                <h2 className="text-2xl font-bold tracking-tight text-white/90">Public OSINT Intelligence</h2>
+                                <p className="text-sm text-gray-500 mt-1">Aggregated public records and media (Sanctions, Trade, Filings, News)</p>
+                            </div>
+                            <div className="px-3 py-1 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-[10px] font-bold text-indigo-400 uppercase tracking-widest flex items-center gap-2">
+                                {loadingPublicData ? (
+                                    <>
+                                        <div className="w-1.5 h-1.5 rounded-full bg-indigo-400 animate-pulse" />
+                                        Gathering Data...
+                                    </>
+                                ) : (
+                                    <>
+                                        <div className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                                        Real-time Cached
+                                    </>
+                                )}
+                            </div>
+                        </div>
+
+                        {loadingPublicData ? (
+                            <div className="grid md:grid-cols-2 gap-6">
+                                {[1, 2, 3, 4].map((i) => (
+                                    <div key={i} className="h-48 rounded-2xl bg-white/[0.02] border border-white/[0.05] animate-pulse" />
+                                ))}
+                            </div>
+                        ) : publicData ? (
+                            <div className="grid md:grid-cols-2 gap-6">
+                                {/* Sanctions & Watchlists */}
+                                <div className="p-6 rounded-2xl bg-white/[0.02] border border-white/[0.05] space-y-4">
+                                    <div className="flex items-center gap-3">
+                                        <div className={`p-2 rounded-lg ${publicData.sanctions?.flagged ? 'bg-red-500/20 text-red-400' : 'bg-emerald-500/10 text-emerald-400'}`}>
+                                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                                            </svg>
+                                        </div>
+                                        <h3 className="text-lg font-bold">Public Watchlists</h3>
+                                    </div>
+                                    <div className="space-y-3">
+                                        {publicData.sanctions?.flagged ? (
+                                            <div className="space-y-2">
+                                                <div className="px-3 py-2 rounded-lg border border-red-500/20 bg-red-500/10 text-xs text-red-300 font-medium">
+                                                    ⚠️ {publicData.sanctions.total_hits} suspicious records found across OFAC/BIS/EU.
+                                                </div>
+                                                <div className="max-h-32 overflow-y-auto space-y-2 pr-2 custom-scrollbar">
+                                                    {publicData.sanctions.hits.map((hit: any, i: number) => (
+                                                        <div key={i} className="p-2 rounded bg-black/20 border border-white/5 text-xs">
+                                                            <div className="font-bold text-white/80">{hit.matched_name}</div>
+                                                            <div className="text-gray-500 flex justify-between mt-1">
+                                                                <span>{hit.list}</span>
+                                                                <span className="text-red-400">{Math.round(hit.match_score)}% Match</span>
+                                                            </div>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        ) : (
+                                            <p className="text-sm text-gray-400">No public sanctions records identified.</p>
+                                        )}
+                                        <p className="text-[10px] text-gray-600">Cross-referenced against OFAC SDN, BIS, and EU lists.</p>
+                                    </div>
+                                </div>
+
+                                {/* Trade Records */}
+                                <div className="p-6 rounded-2xl bg-white/[0.02] border border-white/[0.05] space-y-4">
+                                    <div className="flex items-center gap-3">
+                                        <div className="p-2 rounded-lg bg-blue-500/10 text-blue-400">
+                                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 002 2h1.5a3.5 3.5 0 013.5 3.5V17m-6-10H14a5.5 5.5 0 00-5.5 5.5v1.5a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 001-1h2a1 1 0 001-1v-2a1 1 0 001-1h1.5a1 1 0 011 1v.5" />
+                                            </svg>
+                                        </div>
+                                        <h3 className="text-lg font-bold">Trade & Imports</h3>
+                                    </div>
+                                    <div className="space-y-3">
+                                        {publicData.trade_records?.available ? (
+                                            <div className="space-y-2">
+                                                <div className="px-3 py-2 rounded-lg border border-blue-500/20 bg-blue-500/10 text-xs text-blue-300 font-medium">
+                                                    📦 Located {publicData.trade_records.total_records} macro import records.
+                                                </div>
+                                                 <div className="max-h-32 overflow-y-auto space-y-2 pr-2 custom-scrollbar">
+                                                    {publicData.trade_records.records.map((rec: any, i: number) => (
+                                                        <div key={i} className="p-2 rounded bg-black/20 border border-white/5 flex justify-between text-xs">
+                                                            <span className="text-gray-400">{rec.period}</span>
+                                                            <span className="font-mono text-white/80">${parseInt(rec.general_value).toLocaleString()}</span>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        ) : (
+                                            <p className="text-sm text-gray-400">{publicData.trade_records?.reason || "No relevant public trade data found."}</p>
+                                        )}
+                                        <p className="text-[10px] text-gray-600">Sourced from US Census Bureau International Trade API.</p>
+                                    </div>
+                                </div>
+
+                                {/* Corporate Filings */}
+                                <div className="p-6 rounded-2xl bg-white/[0.02] border border-white/[0.05] space-y-4">
+                                    <div className="flex items-center gap-3">
+                                        <div className="p-2 rounded-lg bg-orange-500/10 text-orange-400">
+                                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                                            </svg>
+                                        </div>
+                                        <h3 className="text-lg font-bold">Corporate Filings</h3>
+                                    </div>
+                                    <div className="space-y-3">
+                                        {publicData.corporate_filings?.available ? (
+                                            <div className="max-h-40 overflow-y-auto space-y-2 pr-2 custom-scrollbar">
+                                                {publicData.corporate_filings.filings.map((filing: any, i: number) => (
+                                                    <a key={i} href={filing.url} target="_blank" rel="noreferrer" className="block p-3 rounded bg-black/20 border border-white/5 hover:border-white/20 transition">
+                                                        <div className="flex justify-between items-start mb-1">
+                                                            <span className="text-xs font-bold text-white/90 truncate">{filing.title}</span>
+                                                            <span className="text-[10px] px-1.5 py-0.5 rounded bg-white/10 text-gray-300 ml-2">{filing.type}</span>
+                                                        </div>
+                                                        <div className="text-[10px] text-gray-500 line-clamp-2">{filing.summary}</div>
+                                                        <div className="text-[10px] text-gray-600 mt-1">{filing.date}</div>
+                                                    </a>
+                                                ))}
+                                            </div>
+                                        ) : (
+                                            <p className="text-sm text-gray-400">No SEC EDGAR mentions found for this entity.</p>
+                                        )}
+                                        <p className="text-[10px] text-gray-600">Sourced from SEC EDGAR Free Full-Text Search.</p>
+                                    </div>
+                                </div>
+
+                                {/* Recent News */}
+                                <div className="p-6 rounded-2xl bg-white/[0.02] border border-white/[0.05] space-y-4">
+                                    <div className="flex items-center justify-between">
+                                        <div className="flex items-center gap-3">
+                                            <div className="p-2 rounded-lg bg-pink-500/10 text-pink-400">
+                                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9.5a2.5 2.5 0 00-2.5-2.5H14" />
+                                                </svg>
+                                            </div>
+                                            <h3 className="text-lg font-bold">Media Sentiment</h3>
+                                        </div>
+                                        {publicData.news?.risk_relevant_count > 0 && (
+                                            <span className="text-[10px] px-2 py-1 rounded bg-red-500/20 text-red-400 font-bold tracking-widest uppercase">
+                                                {publicData.news.risk_relevant_count} Flagged
+                                            </span>
+                                        )}
+                                    </div>
+                                    <div className="space-y-3">
+                                        {publicData.news?.available ? (
+                                            <div className="max-h-40 overflow-y-auto space-y-2 pr-2 custom-scrollbar">
+                                                {publicData.news.articles.map((article: any, i: number) => (
+                                                    <a key={i} href={article.url} target="_blank" rel="noreferrer" 
+                                                       className={`flex gap-3 p-3 rounded bg-black/20 border transition ${article.risk_relevant ? 'border-red-500/30 hover:border-red-500/60' : 'border-white/5 hover:border-white/20'}`}>
+                                                        {article.image && (
+                                                            <div className="w-12 h-12 rounded overflow-hidden shrink-0 hidden sm:block bg-white/5">
+                                                                <img src={article.image} alt="" className="w-full h-full object-cover" />
+                                                            </div>
+                                                        )}
+                                                        <div>
+                                                            <div className="text-xs font-bold text-white/90 line-clamp-2 leading-snug">{article.title}</div>
+                                                            <div className="flex items-center gap-2 mt-2">
+                                                                <span className="text-[10px] text-gray-500">{article.source}</span>
+                                                                <span className="w-1 h-1 rounded-full bg-gray-700" />
+                                                                <span className="text-[9px] text-gray-600">{new Date(article.published_at).toLocaleDateString()}</span>
+                                                                {article.risk_keywords?.length > 0 && (
+                                                                    <>
+                                                                        <span className="w-1 h-1 rounded-full bg-gray-700" />
+                                                                        <span className="text-[9px] text-red-400 font-medium">#{article.risk_keywords[0]}</span>
+                                                                    </>
+                                                                )}
+                                                            </div>
+                                                        </div>
+                                                    </a>
+                                                ))}
+                                            </div>
+                                        ) : (
+                                            <p className="text-sm text-gray-400">{publicData.news?.reason || "No recent relevant articles found (past 12mo)."}</p>
+                                        )}
+                                        <p className="text-[10px] text-gray-600">Sourced from GNews indexed public articles.</p>
+                                    </div>
+                                </div>
+
+                            </div>
+                        ) : (
+                            <div className="p-8 text-center rounded-2xl border border-white/5 bg-white/[0.02]">
+                                <p className="text-gray-500">Public intelligence data temporarily unavailable.</p>
+                            </div>
+                        )}
                     </div>
                 </div>
             </main>
