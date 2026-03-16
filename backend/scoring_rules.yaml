@@ -1,0 +1,71 @@
+# Risk Scoring Configuration v1.0
+version: "v1.0"
+max_score: 100
+
+thresholds:
+  fail: 75
+  conditional: 40
+
+rules:
+  # Sanctions related rules
+  sanctions:
+    # If there is a direct sanction hit
+    hit:
+      weight: 70
+      reason: "Active sanctions match detected on one or more watchlists"
+    # If there is a Section 889 issue
+    section_889_fail:
+      weight: 30
+      reason: "Section 889 fail status detected"
+    section_889_conditional:
+      weight: 15
+      reason: "Section 889 conditional status detected"
+
+  # Geographical risk by country code
+  geographic_risk:
+    high:
+      countries: ["RU", "KP", "IR", "SY", "CU", "BY"]
+      weight: 40
+      reason: "Entity located in a high-risk jurisdiction"
+    medium:
+      countries: ["CN", "VE", "IQ", "AF", "SD"]
+      weight: 20
+      reason: "Entity located in a medium-risk jurisdiction"
+
+  # Risk due to incomplete data
+  data_gaps:
+    unknown_sub_tiers:
+      weight: 15
+      reason: "Unknown sub-tier suppliers increasing opacity risk"
+    missing_address:
+      weight: 5
+      reason: "Missing registered address details"
+    missing_industry:
+      weight: 5
+      reason: "Undefined industry sector"
+
+  # External Intelligence Signals
+  adverse_news:
+    severe:
+      threshold: 80
+      weight: 50
+      reason: "Severe adverse media reports identified"
+    moderate:
+      threshold: 40
+      weight: 25
+      reason: "Moderate adverse media reports identified"
+    minor:
+      threshold: 1
+      weight: 10
+      reason: "Minor adverse media coverage found"
+
+  # Network and Graph risks
+  network_risk:
+    high_impact:
+      threshold: 50
+      weight: 50
+      reason: "High exposure through related entities in network"
+    medium_impact:
+      threshold: 20
+      weight: 20
+      reason: "Moderate exposure through related entities"
