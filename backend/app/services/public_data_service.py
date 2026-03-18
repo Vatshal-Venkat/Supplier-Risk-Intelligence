@@ -31,10 +31,14 @@ def _normalize(text: str) -> str:
 
 
 def _safe_get(url: str, headers: dict | None = None, params: dict | None = None,
-              timeout: int = 20) -> requests.Response | None:
+              timeout: int = 20, verify: bool = True) -> requests.Response | None:
     """HTTP GET with built-in error swallowing — never lets a network issue crash the pipeline."""
     try:
-        resp = requests.get(url, headers=headers, params=params, timeout=timeout)
+        # Suppress insecure request warnings if verify is False
+        if not verify:
+            import urllib3
+            urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+        resp = requests.get(url, headers=headers, params=params, timeout=timeout, verify=verify)
         resp.raise_for_status()
         return resp
     except Exception as e:
@@ -89,7 +93,7 @@ def _screen_ofac(name: str) -> list[dict]:
 def _screen_bis(name: str) -> list[dict]:
     """Download BIS Entity List CSV and fuzzy-match."""
     hits: list[dict] = []
-    resp = _safe_get(_BIS_ENTITY_URL, timeout=30)
+    resp = _safe_get(_BIS_ENTITY_URL, timeout=30, verify=False)
     if not resp:
         return hits
 
