@@ -19,6 +19,9 @@ export default function SuppliersPage() {
   const [search, setSearch] = useState("");
   const [selectedCountry, setSelectedCountry] = useState("");
   const [selectedIndustry, setSelectedIndustry] = useState("");
+  const [selectedCity, setSelectedCity] = useState("");
+  const [selectedNaics, setSelectedNaics] = useState("");
+  const [selectedPart, setSelectedPart] = useState("");
   const [showFilters, setShowFilters] = useState(false);
   const [isSearching, setIsSearching] = useState(false);
   const [sortKey, setSortKey] = useState<"name" | "country" | "industry">("name");
@@ -30,12 +33,15 @@ export default function SuppliersPage() {
     setIsSearching(true);
     try {
       let res;
-      if (search.trim() || selectedCountry || selectedIndustry) {
+      if (search.trim() || selectedCountry || selectedIndustry || selectedCity || selectedNaics) {
         res = await api.get("/suppliers/search", {
           params: {
             ...(search.trim().length >= 2 ? { query: search.trim() } : {}),
             country: selectedCountry || undefined,
-            industry: selectedIndustry || undefined
+            industry: selectedIndustry || undefined,
+            city: selectedCity || undefined,
+            naics_code: selectedNaics || undefined,
+            part_number: selectedPart || undefined
           }
         });
         setSuppliers(res.data.map((r: any) => r[0] || r));
@@ -53,7 +59,7 @@ export default function SuppliersPage() {
 
   useEffect(() => {
     fetchSuppliers();
-  }, [search, selectedCountry, selectedIndustry]);
+  }, [search, selectedCountry, selectedIndustry, selectedCity, selectedNaics, selectedPart]);
 
   const toggleSelect = (id: number) => {
     setSelected(prev =>
@@ -135,30 +141,58 @@ export default function SuppliersPage() {
           </div>
 
           {showFilters && (
-            <div className="grid grid-cols-2 gap-4 animate-in fade-in slide-in-from-top-1 duration-200">
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-4 animate-in fade-in slide-in-from-top-1 duration-200">
               <select 
                 value={selectedCountry}
                 onChange={(e) => setSelectedCountry(e.target.value)}
                 className="bg-[#111a2a] border border-zinc-700 rounded-lg px-3 py-2 text-xs text-gray-400 focus:outline-none focus:border-white/30"
               >
-                <option value="">All Locations</option>
+                <option value="">All Regions</option>
                 <option value="United States">United States</option>
                 <option value="China">China</option>
                 <option value="Germany">Germany</option>
                 <option value="India">India</option>
                 <option value="Japan">Japan</option>
               </select>
+              
+              <input 
+                placeholder="City (e.g. Shenzhen)"
+                value={selectedCity}
+                onChange={(e) => setSelectedCity(e.target.value)}
+                className="bg-[#111a2a] border border-zinc-700 rounded-lg px-3 py-2 text-xs text-gray-300 placeholder-gray-600 focus:outline-none focus:border-white/30"
+              />
+
               <select 
                 value={selectedIndustry}
                 onChange={(e) => setSelectedIndustry(e.target.value)}
                 className="bg-[#111a2a] border border-zinc-700 rounded-lg px-3 py-2 text-xs text-gray-400 focus:outline-none focus:border-white/30"
               >
                 <option value="">All Industries</option>
-                <option value="331110">Iron and Steel Mills (331110)</option>
+                <option value="331110">Iron and Steel Mills</option>
                 <option value="Manufacturing">Manufacturing</option>
                 <option value="Technology">Technology</option>
                 <option value="Logistics">Logistics</option>
               </select>
+
+              <input 
+                placeholder="NAICS Code"
+                value={selectedNaics}
+                onChange={(e) => setSelectedNaics(e.target.value)}
+                className="bg-[#111a2a] border border-zinc-700 rounded-lg px-3 py-2 text-xs text-gray-300 placeholder-gray-600 focus:outline-none focus:border-white/30"
+              />
+
+              <div className="relative group">
+                <input 
+                  placeholder="Part #"
+                  value={selectedPart}
+                  onChange={(e) => setSelectedPart(e.target.value)}
+                  disabled
+                  className="w-full bg-[#111a2a]/50 text-gray-600 border border-zinc-800 rounded-lg px-3 py-2 text-xs focus:outline-none cursor-not-allowed"
+                />
+                <div className="absolute inset-y-0 right-3 flex items-center pr-2 pointer-events-none">
+                  <span className="text-[9px] uppercase tracking-widest text-indigo-500/50 font-bold bg-indigo-500/10 px-1.5 py-0.5 rounded">Soon</span>
+                </div>
+              </div>
             </div>
           )}
         </div>
