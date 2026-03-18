@@ -334,8 +334,33 @@ export default function AssessmentPage() {
           <div className="flex flex-col md:flex-row gap-8">
             {/* Left: Overall Score */}
             <div className="flex-1">
-              <div className="text-xs uppercase tracking-widest text-gray-500">
+              <div className="text-xs uppercase tracking-widest text-gray-500 flex items-center gap-2">
                 Overall Risk Score
+                <div className="group relative inline-flex items-center justify-center cursor-help pb-1">
+                  <svg className="w-4 h-4 text-zinc-500 hover:text-zinc-300 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  {/* Tooltip */}
+                  <div className="absolute left-1/2 -translate-x-1/2 bottom-full mb-2 opacity-0 group-hover:opacity-100 invisible group-hover:visible w-72 p-4 bg-[#121822] border border-zinc-700/80 rounded-lg shadow-2xl z-50 transition-all duration-200 pointer-events-none">
+                    <p className="font-semibold text-white mb-2 pb-2 border-b border-zinc-800 text-sm normal-case tracking-normal">Score Calculation</p>
+                    <p className="text-xs mb-3 text-gray-400 leading-relaxed normal-case tracking-normal border-b border-zinc-800 pb-2">The risk score (0-100) measures potential supplier exposure. A higher score signifies higher risk.</p>
+                    {data.breakdown?.factors?.filter(f => f.triggered).length ? (
+                      <div className="space-y-1.5 pt-1">
+                        {data.breakdown.factors.filter(f => f.triggered).map((factor, idx) => (
+                          <div key={idx} className="flex justify-between items-start text-xs normal-case tracking-normal">
+                            <span className="text-gray-400 pr-3">- {factor.label}</span>
+                            <span className="font-mono text-red-400 whitespace-nowrap">+{factor.points}</span>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                       <div className="text-xs text-green-400 pt-1 normal-case tracking-normal">No risk points assigned.</div>
+                    )}
+                    {/* Tooltip Arrow */}
+                    <div className="absolute left-1/2 -translate-x-1/2 -bottom-2 w-0 h-0 border-l-[8px] border-l-transparent border-r-[8px] border-r-transparent border-t-[8px] border-t-zinc-700/80"></div>
+                    <div className="absolute left-1/2 -translate-x-1/2 -bottom-[7px] w-0 h-0 border-l-[8px] border-l-transparent border-r-[8px] border-r-transparent border-t-[8px] border-t-[#121822]"></div>
+                  </div>
+                </div>
               </div>
               <div className="text-5xl font-semibold mt-3">
                 {data.risk_score}
