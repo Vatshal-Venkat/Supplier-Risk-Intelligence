@@ -33,6 +33,9 @@ def search_suppliers(
     query: Optional[str] = Query(None),
     country: Optional[str] = None,
     industry: Optional[str] = None,
+    city: Optional[str] = None,
+    naics_code: Optional[str] = None,
+    part_number: Optional[str] = None,
     limit: int = 20,
     offset: int = 0,
     db: Session = Depends(get_db),
@@ -71,6 +74,12 @@ def search_suppliers(
     
     if industry:
         base_query = base_query.filter(Supplier.industry.ilike(f"%{industry}%"))
+
+    if city:
+        base_query = base_query.filter(Supplier.address.ilike(f"%{city}%"))
+
+    if naics_code:
+        base_query = base_query.filter(Supplier.naics_code.ilike(f"%{naics_code}%"))
 
     # Relevancy threshold
     if query:
@@ -275,9 +284,12 @@ def resolve_supplier_identity(
     for supplier in existing_suppliers:
         if name.lower() in supplier.name.lower():
             matches.append({
+                "supplier_id": supplier.id,
                 "canonical_name": supplier.name,
                 "confidence": 85,
-                "country": supplier.country,
+                "country": supplier.country or "Unknown",
+                "industry": supplier.industry or "Unknown",
+                "address": supplier.address or None,
             })
 
     return {"matches": matches}
