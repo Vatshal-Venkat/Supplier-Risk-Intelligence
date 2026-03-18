@@ -209,8 +209,42 @@ export default function AssessmentPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#070b12] text-gray-500">
-        Loading assessment...
+      <div className="min-h-screen flex flex-col items-center justify-center bg-[#070b12] text-white px-6">
+        <div className="max-w-md w-full space-y-8">
+          <div className="text-center space-y-2">
+            <h2 className="text-2xl font-bold tracking-tight">Running Intelligence Assessment</h2>
+            <p className="text-gray-500 text-sm">
+              Gathering and analyzing data from global sanctions lists, trade records, corporate filings, and media sentiment.
+            </p>
+          </div>
+
+          <div className="space-y-3">
+            <div className="flex justify-between text-xs font-medium text-gray-400">
+              <span className="uppercase tracking-widest">Analysis in Progress</span>
+              <span className="text-indigo-400 animate-pulse">Processing...</span>
+            </div>
+            <div className="w-full h-2 bg-zinc-800 rounded-full overflow-hidden relative">
+              <div 
+                className="absolute inset-y-0 left-0 bg-indigo-500 rounded-full w-1/3 animate-[progress_2s_ease-in-out_infinite] shadow-[0_0_10px_rgba(99,102,241,0.5)]"
+              />
+            </div>
+          </div>
+
+          <div className="bg-white/[0.02] border border-white/[0.05] rounded-lg p-4 text-center">
+            <p className="text-xs text-gray-400">
+              <span className="text-indigo-400 font-semibold">Note:</span> A full assessment can take between 2-3 minutes while the AI engine maps the trust graph and screens thousands of public records.
+            </p>
+          </div>
+        </div>
+
+        {/* Custom keyframes for the indeterminate progress bar */}
+        <style dangerouslySetInnerHTML={{__html: `
+          @keyframes progress {
+            0% { left: -33%; width: 33%; }
+            50% { left: 33%; width: 50%; }
+            100% { left: 100%; width: 33%; }
+          }
+        `}} />
       </div>
     );
   }
