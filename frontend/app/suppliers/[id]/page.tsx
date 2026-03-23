@@ -1,7 +1,7 @@
 "use client";
 
 import { useParams, useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import api from "@/lib/api";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import TrustGraph from "@/components/TrustGraph";
@@ -12,6 +12,10 @@ export default function SupplierProfilePage() {
     const [data, setData] = useState<any>(null);
     const [publicData, setPublicData] = useState<any>(null);
     const [loadingPublicData, setLoadingPublicData] = useState(true);
+    const [docPdfUrl, setDocPdfUrl] = useState("");
+    const [docExtracting, setDocExtracting] = useState(false);
+    const [docResult, setDocResult] = useState<any>(null);
+    const [docError, setDocError] = useState<string | null>(null);
 
     useEffect(() => {
         if (!id) return;
@@ -472,6 +476,129 @@ export default function SupplierProfilePage() {
                                         )}
                                         <p className="text-[10px] text-gray-600">Sourced from SEC EDGAR Free Full-Text Search.</p>
                                     </div>
+                                </div>
+
+                                {/* ── DOCUMENT EVIDENCE EXTRACTION ─────────────── */}
+                                <div className="col-span-full p-6 rounded-2xl bg-white/[0.02] border border-white/[0.05] space-y-5">
+                                    <div className="flex items-center gap-3 mb-1">
+                                        <div className="p-2 rounded-lg bg-violet-500/10 text-violet-400">
+                                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                            </svg>
+                                        </div>
+                                        <div>
+                                            <h3 className="text-lg font-bold">Document Evidence Intelligence</h3>
+                                            <p className="text-[10px] text-gray-500 mt-0.5 uppercase tracking-widest">OCR · NER · Confidence Scores</p>
+                                        </div>
+                                        <div className="ml-auto px-2.5 py-1 rounded-full bg-violet-500/10 border border-violet-500/20 text-[10px] font-bold text-violet-400 uppercase tracking-widest">
+                                            FR-1.2.3
+                                        </div>
+                                    </div>
+
+                                    {/* URL Input */}
+                                    <div className="flex gap-3">
+                                        <input
+                                            className="flex-1 px-4 py-2.5 bg-[#0e1623] border border-zinc-800 rounded-lg focus:outline-none focus:border-violet-500/50 transition text-sm text-white placeholder-gray-600"
+                                            placeholder="Paste a PDF URL (e.g. SEC EDGAR filing link)"
+                                            value={docPdfUrl}
+                                            onChange={e => { setDocPdfUrl(e.target.value); setDocResult(null); setDocError(null); }}
+                                        />
+                                        <button
+                                            onClick={async () => {
+                                                if (!docPdfUrl.trim()) return;
+                                                setDocExtracting(true);
+                                                setDocResult(null);
+                                                setDocError(null);
+                                                try {
+                                                    const res = await api.post(`/suppliers/${id}/document-extract`, { pdf_url: docPdfUrl.trim() });
+                                                    if (res.data.error) {
+                                                        setDocError(res.data.error);
+                                                    } else {
+                                                        setDocResult(res.data);
+                                                    }
+                                                } catch (e: any) {
+                                                    setDocError(e?.response?.data?.detail || "Extraction failed.");
+                                                } finally {
+                                                    setDocExtracting(false);
+                                                }
+                                            }}
+                                            disabled={!docPdfUrl.trim() || docExtracting}
+                                            className="px-4 py-2.5 text-sm border border-violet-500/50 text-violet-300 bg-violet-500/10 rounded-lg hover:bg-violet-500/20 transition disabled:opacity-40 disabled:cursor-not-allowed whitespace-nowrap flex items-center gap-2"
+                                        >
+                                            {docExtracting ? (
+                                                <>
+                                                    <span className="w-3.5 h-3.5 border-2 border-violet-400/30 border-t-violet-400 rounded-full animate-spin" />
+                                                    Analyzing…
+                                                </>
+                                            ) : "Analyze PDF"}
+                                        </button>
+                                    </div>
+
+                                    {docError && (
+                                        <div className="px-4 py-3 rounded-lg bg-red-500/10 border border-red-500/20 text-xs text-red-400">
+                                            {docError}
+                                        </div>
+                                    )}
+
+                                    {/* Results Evidence Table */}
+                                    {docResult && (
+                                        <div className="space-y-4">
+                                            <div className="flex items-center justify-between">
+                                                <p className="text-[11px] text-gray-500">
+                                                    Parsed <span className="text-white/70 font-semibold">{docResult.pages_parsed} page(s)</span> · Found{" "}
+                                                    <span className="text-violet-300 font-semibold">{docResult.entities?.length ?? 0} entities</span>
+                                                </p>
+                                                <a href={docResult.source_url} target="_blank" rel="noreferrer" className="text-[10px] text-gray-600 hover:text-gray-400 transition underline underline-offset-2">Source PDF ↗</a>
+                                            </div>
+
+                                            {docResult.entities?.length === 0 ? (
+                                                <p className="text-xs text-gray-500 italic">No named entities could be extracted from this document.</p>
+                                            ) : (
+                                                <div className="overflow-x-auto rounded-xl border border-white/[0.05]">
+                                                    <table className="w-full text-xs">
+                                                        <thead>
+                                                            <tr className="border-b border-white/[0.05] text-[10px] text-gray-500 uppercase tracking-wider">
+                                                                <th className="text-left px-4 py-3 font-bold">Entity</th>
+                                                                <th className="text-left px-4 py-3 font-bold">Type</th>
+                                                                <th className="text-center px-4 py-3 font-bold">Occurrences</th>
+                                                                <th className="text-right px-4 py-3 font-bold w-36">Confidence</th>
+                                                            </tr>
+                                                        </thead>
+                                                        <tbody className="divide-y divide-white/[0.03]">
+                                                            {docResult.entities.map((ent: any, idx: number) => {
+                                                                const pct = Math.round(ent.confidence * 100);
+                                                                const barColor = pct >= 85 ? "bg-emerald-500" : pct >= 65 ? "bg-amber-500" : "bg-red-500";
+                                                                const textColor = pct >= 85 ? "text-emerald-400" : pct >= 65 ? "text-amber-400" : "text-red-400";
+                                                                return (
+                                                                    <tr key={idx} className="hover:bg-white/[0.02] transition">
+                                                                        <td className="px-4 py-3 font-medium text-white/85">{ent.entity}</td>
+                                                                        <td className="px-4 py-3">
+                                                                            <span className="px-2 py-0.5 rounded bg-violet-500/10 border border-violet-500/15 text-[10px] font-bold text-violet-300 uppercase tracking-wide">
+                                                                                {ent.entity_type}
+                                                                            </span>
+                                                                        </td>
+                                                                        <td className="px-4 py-3 text-center text-gray-400 font-mono">{ent.occurrences}</td>
+                                                                        <td className="px-4 py-3">
+                                                                            <div className="flex items-center justify-end gap-3">
+                                                                                <div className="flex-1 max-w-20 bg-white/5 rounded-full overflow-hidden h-1.5">
+                                                                                    <div className={`h-full rounded-full ${barColor} transition-all`} style={{ width: `${pct}%` }} />
+                                                                                </div>
+                                                                                <span className={`font-mono font-bold text-xs w-10 text-right ${textColor}`}>{(ent.confidence).toFixed(2)}</span>
+                                                                            </div>
+                                                                        </td>
+                                                                    </tr>
+                                                                );
+                                                            })}
+                                                        </tbody>
+                                                    </table>
+                                                </div>
+                                            )}
+                                        </div>
+                                    )}
+
+                                    {!docResult && !docExtracting && !docError && (
+                                        <p className="text-[11px] text-gray-600 italic">Paste a public PDF link above to extract entities like company names, people, locations, and regulatory references.</p>
+                                    )}
                                 </div>
 
                                 {/* Recent News */}
