@@ -90,7 +90,6 @@ export default function Navbar() {
             <div className="flex items-center gap-2">
               {navItem("/suppliers", "Suppliers")}
               {navItem("/comparison", "Comparison")}
-              {navItem("/assessment/new", "New Assessment")}
 
               {user.role === "ADMIN" &&
                 navItem("/admin/config", "Admin Config")}
