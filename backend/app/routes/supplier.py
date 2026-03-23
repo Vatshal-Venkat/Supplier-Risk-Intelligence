@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Depends, WebSocket, HTTPException, Query
+from pydantic import BaseModel
 from sqlalchemy.orm import Session
 from typing import List, Optional
 import asyncio
@@ -658,6 +659,38 @@ def compare_assessments(
     ).first()
     if not a or not b:
         raise HTTPException(status_code=404, detail="Assessment not found")
+    
+    # ---------------------------------------------------------------
+    # Deep Snapshot Comparison (FR-1.3.4 Enhancements)
+    # ---------------------------------------------------------------
+    snap_a = a.snapshot or {}
+    snap_b = b.snapshot or {}
+
+    # Sanctions Delta Details
+    matches_a = { (m.get("source"), m.get("checked_name")): m for m in snap_a.get("sanctions", {}).get("matches", []) }
+    matches_b = { (m.get("source"), m.get("checked_name")): m for m in snap_b.get("sanctions", {}).get("matches", []) }
+    
+    new_sanctions = [m for k, m in matches_b.items() if k not in matches_a]
+    removed_sanctions = [m for k, m in matches_a.items() if k not in matches_b]
+
+    # Factor Analysis
+    factors_a = { f.get("key"): f for f in snap_a.get("factors", []) }
+    factors_b = { f.get("key"): f for f in snap_b.get("factors", []) }
+    
+    factor_changes = []
+    for key in set(factors_a.keys()) | set(factors_b.keys()):
+        fa = factors_a.get(key, {})
+        fb = factors_b.get(key, {})
+        if fa.get("points") != fb.get("points") or fa.get("triggered") != fb.get("triggered"):
+            factor_changes.append({
+                "key": key,
+                "label": fb.get("label") or fa.get("label"),
+                "from_points": fa.get("points", 0),
+                "to_points": fb.get("points", 0),
+                "from_triggered": fa.get("triggered", False),
+                "to_triggered": fb.get("triggered", False)
+            })
+
     return {
         "risk_score_delta": b.risk_score - a.risk_score,
         "sanctions_flag_delta": int(b.sanctions_flag) - int(a.sanctions_flag),
@@ -670,6 +703,12 @@ def compare_assessments(
         "version_change": {
             "from": a.scoring_version,
             "to": b.scoring_version
+        },
+        "details": {
+            "new_sanctions": new_sanctions,
+            "removed_sanctions": removed_sanctions,
+            "factor_changes": factor_changes,
+            "new_reasons": [r for r in snap_b.get("reasons", []) if r not in snap_a.get("reasons", [])],
         }
     }
 # =====================================================
@@ -778,3 +817,54 @@ def get_supplier_public_data(
     )
 
     return result
+
+# =====================================================
+# DOCUMENT EXTRACTION — PDF → ENTITIES (FR-1.2.3)
+# =====================================================
+from app.services.document_extraction_service import extract_entities_from_filing
+
+class DocumentExtractRequest(BaseModel):
+    pdf_url: str
+
+@router.post("/{supplier_id:int}/document-extract")
+def extract_filing_entities(
+    supplier_id: int,
+    payload: DocumentExtractRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """
+    Download a PDF filing URL provided by the user, extract its text,
+    run NER and return structured entities with confidence scores (0-1).
+    """
+    supplier = (
+        db.query(Supplier)
+        .filter(
+            Supplier.id == supplier_id,
+            or_(
+                Supplier.organization_id == current_user.organization_id,
+                Supplier.is_global == True,
+            ),
+        )
+        .first()
+    )
+
+    if not supplier:
+        raise HTTPException(status_code=404, detail="Supplier not found")
+
+    result = extract_entities_from_filing(
+        pdf_url=payload.pdf_url,
+        supplier_name=supplier.name,
+    )
+
+    log_action(
+        db=db,
+        user_id=current_user.id,
+        action="EXTRACT_FILING_ENTITIES",
+        resource_type="Supplier",
+        resource_id=supplier_id,
+        details={"pdf_url": payload.pdf_url, "entity_count": len(result.get("entities", []))},
+    )
+
+    return result
+
