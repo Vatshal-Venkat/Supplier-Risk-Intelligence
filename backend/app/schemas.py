@@ -59,3 +59,21 @@ class AuditLogResponse(BaseModel):
 
     class Config:
         from_attributes = True
+
+
+class ScoringConfigUpdate(BaseModel):
+    sanctions_weight: int
+    section889_fail_weight: int
+    section889_conditional_weight: int
+
+
+class ScoringConfigResponse(BaseModel):
+    id: int
+    sanctions_weight: int
+    section889_fail_weight: int
+    section889_conditional_weight: int
+    version: str
+    active: bool
+
+    class Config:
+        from_attributes = True
