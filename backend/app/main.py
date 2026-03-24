@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.routes import health, supplier, audit
-from app.api import auth, admin
+from app.api import auth, admin, user_management, scoring_config_api
 
 from app.database import engine, SessionLocal
 from app.models import Base
@@ -38,6 +38,8 @@ app.add_middleware(
 # =====================================================
 app.include_router(auth.router)
 app.include_router(admin.router)
+app.include_router(user_management.router)
+app.include_router(scoring_config_api.router)
 app.include_router(health.router)
 app.include_router(supplier.router)
 app.include_router(audit.router)
