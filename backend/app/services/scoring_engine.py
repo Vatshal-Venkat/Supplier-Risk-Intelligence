@@ -32,16 +32,32 @@ class ScoringEngine:
         Calculates the risk score given a context of extracted intelligence.
         Returns: (total_score, status, detailed_breakdown, version)
         """
-        config = ScoringEngine._load_config()
-        rules = config.get("rules", {})
+        from app.database import SessionLocal
+        from app.models import ScoringConfig
+        
+        # 1. Load active config from DB if available
+        db = SessionLocal()
+        db_config = db.query(ScoringConfig).filter(ScoringConfig.active == True).first()
+        db.close()
+        
+        # 2. Load YAML config as fallback/defaults
+        yaml_config = ScoringEngine._load_config()
+        rules = yaml_config.get("rules", {})
+        sanctions_rules = rules.get("sanctions", {})
+        
+        # Override weights if DB config exists
+        sanctions_hit_weight = db_config.sanctions_weight if db_config else sanctions_rules.get("hit", {}).get("weight", 70)
+        s889_fail_weight = db_config.section889_fail_weight if db_config else sanctions_rules.get("section_889_fail", {}).get("weight", 30)
+        s889_cond_weight = db_config.section889_conditional_weight if db_config else sanctions_rules.get("section_889_conditional", {}).get("weight", 15)
+        
+        version = db_config.version if db_config else yaml_config.get("version", "unknown")
         
         total_score = 0
         factors = []
         
-        # 1. Sanctions Risk
-        sanctions_rules = rules.get("sanctions", {})
+        # 3. Sanctions Risk
         if context.get("sanctions_hit"):
-            weight = sanctions_rules.get("hit", {}).get("weight", 70)
+            weight = sanctions_hit_weight
             reason = sanctions_rules.get("hit", {}).get("reason", "Active sanctions match")
             total_score += weight
             factors.append({
@@ -57,7 +73,7 @@ class ScoringEngine:
         # Section 889
         s889_status = context.get("section_889_status")
         if s889_status == "FAIL":
-            weight = sanctions_rules.get("section_889_fail", {}).get("weight", 30)
+            weight = s889_fail_weight
             reason = context.get("section_889_reason") or sanctions_rules.get("section_889_fail", {}).get("reason", "Section 889 Fail")
             total_score += weight
             factors.append({
@@ -70,7 +86,7 @@ class ScoringEngine:
                 "reason": reason
             })
         elif s889_status == "CONDITIONAL":
-            weight = sanctions_rules.get("section_889_conditional", {}).get("weight", 15)
+            weight = s889_cond_weight
             reason = context.get("section_889_reason") or sanctions_rules.get("section_889_conditional", {}).get("reason", "Section 889 Conditional")
             total_score += weight
             factors.append({
@@ -240,14 +256,14 @@ class ScoringEngine:
              })
 
         # Cap the total score
-        max_score = config.get("max_score", 100)
+        max_score = yaml_config.get("max_score", 100)
         total_score = min(total_score, max_score)
 
         # Determine overall status
         status = "PASS"
-        if total_score >= config.get("thresholds", {}).get("fail", 75):
+        if total_score >= yaml_config.get("thresholds", {}).get("fail", 75):
             status = "FAIL"
-        elif total_score >= config.get("thresholds", {}).get("conditional", 40):
+        elif total_score >= yaml_config.get("thresholds", {}).get("conditional", 40):
             status = "CONDITIONAL"
 
-        return total_score, status, factors, config.get("version", "unknown")
+        return total_score, status, factors, yaml_config.get("version", "unknown")
