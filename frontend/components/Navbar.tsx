@@ -91,8 +91,12 @@ export default function Navbar() {
               {navItem("/suppliers", "Suppliers")}
               {navItem("/comparison", "Comparison")}
 
-              {user.role === "ADMIN" &&
-                navItem("/admin/config", "Admin Config")}
+              {user.role === "ADMIN" && (
+                <>
+                  {navItem("/admin/config", "Risk Parameters")}
+                  {navItem("/admin/users", "Manage Users")}
+                </>
+              )}
             </div>
           )}
         </div>
