@@ -510,6 +510,36 @@ def _get_supplier_audit_log(db: Session, supplier_id: int):
         })
     return result
 
+def _attach_historical_data(db: Session, supplier_id: int, result: dict):
+    """Fallback to ensure timeline and risk history are present even if cached/celery payload lacks it."""
+    if "risk_history" in result and "timeline" in result:
+        return result
+        
+    history_records = (
+        db.query(AssessmentHistory)
+        .filter(AssessmentHistory.supplier_id == supplier_id)
+        .order_by(desc(AssessmentHistory.created_at))
+        .limit(10)
+        .all()
+    )
+
+    result["risk_history"] = [h.risk_score for h in reversed(history_records)]
+    
+    timeline = []
+    for h in history_records:
+        severity = "LOW"
+        if h.overall_status == "FAIL":
+            severity = "HIGH"
+        elif h.overall_status == "CONDITIONAL":
+            severity = "MEDIUM"
+        timeline.append({
+            "timestamp": h.created_at.strftime("%Y-%m-%d %H:%M"),
+            "label": f"Risk Assessment Completed: {h.overall_status} ({h.risk_score}/100)",
+            "severity": severity
+        })
+    result["timeline"] = timeline
+    return result
+
 @router.get("/{supplier_id:int}/assessment")
 def supplier_assessment(
     supplier_id: int,
@@ -551,13 +581,13 @@ def supplier_assessment(
 
             # Attach live audit trail to cached response
             cached_result["audit_log"] = _get_supplier_audit_log(db, supplier_id)
-            return cached_result
+            
+            # Ensure historical data is attached
+            return _attach_historical_data(db, supplier_id, cached_result)
         except json.JSONDecodeError:
             pass # Fallback to re-running if cache corrupt
 
     # [2] FIRST TIME SLA: Delegate heavy compute to a Celery worker pool
-    # The worker pool guarantees 4 concurrent processes without blocking API.
-    # While we wait synchronously here to please the frontend, the work is distributed.
     celery_task = run_assessment_task.delay(supplier_id, current_user.id)
     
     # Wait for the Celery task (SLA 2-3 mins bounded naturally)
@@ -569,8 +599,6 @@ def supplier_assessment(
 
     # Ensure JSON seriazibility
     result = jsonable_encoder(result)
-
-    # Note: redis_client.setex is already handled inside the Celery task after completion.
 
     log_action(
         db=db,
@@ -584,7 +612,8 @@ def supplier_assessment(
     # Attach audit trail to fresh assessment response
     result["audit_log"] = _get_supplier_audit_log(db, supplier_id)
 
-    return result
+    # Ensure historical data is attached
+    return _attach_historical_data(db, supplier_id, result)
 # =====================================================
 # SUPPLIER HISTORY
 # =====================================================
