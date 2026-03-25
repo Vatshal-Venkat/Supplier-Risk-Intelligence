@@ -1,3 +1,4 @@
+from sqlalchemy import desc
 from sqlalchemy.orm import Session
 from app.models import AssessmentHistory, Supplier
 from app.services.sanctions_service import check_sanctions
@@ -60,8 +61,37 @@ def run_assessment(supplier_id: int, db: Session, user_id: int | None = None):
     reasons = [f.get("reason") for f in breakdown_factors if f.get("triggered")]
 
     # ------------------------------------------------------------------
-    # Persist Assessment History (FULL SNAPSHOT)
+    # Data Trend & Timeline (FR-1.3.3 / FR-1.3.4)
     # ------------------------------------------------------------------
+    history_records = (
+        db.query(AssessmentHistory)
+        .filter(AssessmentHistory.supplier_id == supplier_id)
+        .order_by(desc(AssessmentHistory.created_at))
+        .limit(10)
+        .all()
+    )
+
+    # Risk history (chronological for chart)
+    risk_history = [h.risk_score for h in reversed(history_records)]
+
+    # Timeline events
+    timeline = []
+    for h in history_records:
+        severity = "LOW"
+        if h.overall_status == "FAIL":
+            severity = "HIGH"
+        elif h.overall_status == "CONDITIONAL":
+            severity = "MEDIUM"
+            
+        timeline.append({
+            "timestamp": h.created_at.strftime("%Y-%m-%d %H:%M"),
+            "label": f"Risk Assessment Completed: {h.overall_status} ({h.risk_score}/100)",
+            "severity": severity
+        })
+
+    # --------------------------------------------------
+    # Persist Assessment History (FULL SNAPSHOT)
+    # --------------------------------------------------
     history = AssessmentHistory(
         supplier_id=supplier_id,
         initiated_by_user_id=user_id,
@@ -100,6 +130,8 @@ def run_assessment(supplier_id: int, db: Session, user_id: int | None = None):
         "graph_risk_score": context["graph_risk_score"],
         "explanations": reasons,
         "executive_brief": executive_brief,
+        "risk_history": risk_history,
+        "timeline": timeline,
         "breakdown": {
             "factors": breakdown_factors,
             "total_scored": risk_score,
