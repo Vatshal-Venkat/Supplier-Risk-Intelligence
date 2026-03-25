@@ -163,6 +163,7 @@ class ScoringEngine:
             gap_reasons.append(data_gaps_rules.get("missing_industry", {}).get("reason", "Missing industry"))
             
         if gap_points > 0:
+            total_score += gap_points
             factors.append({
                 "key": "data_gaps",
                 "label": "Data Gaps",
