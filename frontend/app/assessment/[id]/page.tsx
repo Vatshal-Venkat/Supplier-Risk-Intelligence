@@ -606,9 +606,9 @@ export default function AssessmentPage() {
               {data.risk_history!.map((value, index) => (
                 <div
                   key={index}
-                  className="flex-1 bg-white/10 relative rounded-sm"
+                  className="flex-1 max-w-16 bg-white/10 relative rounded-sm"
                   style={{
-                    height: `${(value / maxRisk) * 100}%`,
+                    height: `${Math.max((value / 100) * 100, 2)}%`,
                   }}
                 >
                   <div className="absolute bottom-0 left-0 right-0 h-full bg-white/20 rounded-sm" />
